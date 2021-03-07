@@ -72,7 +72,7 @@ def send_network_request(url):
         app.logger.error(f"Received connection error or timeout attempting to GET: {url}")
         return "down"
     except Exception:
-        app.logger.error(f"Unexpected exception occurred attempting to HEAD request: {url} {traceback.print_exc()}")
+        app.logger.error(f"Unexpected exception occurred attempting to GET request: {url} {traceback.print_exc()}")
         return "down"
 
     # Fixes some issues with requesting HTTPS on HTTP sites.
@@ -87,7 +87,7 @@ def send_network_request(url):
         return "online"
 
     # If the server is presenting us with a DDoS protection challenge.
-    if r.status_code in [401, 403, 503] and r.headers["Server"] == "cloudflare" or \
+    if r.status_code in [401, 403, 503, 520] and r.headers["Server"] == "cloudflare" or \
        r.status_code == 403 and r.headers["Server"] == "ddos-guard":
         return "cloudflare"
 
