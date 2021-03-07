@@ -13,7 +13,10 @@ cache.init_app(app)
 cors = CORS(app)   # TODO: Configure this to only allow piracy.moe requests.
 
 logging.basicConfig(format='[%(asctime)s] %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-app.logger.setLevel(logging.DEBUG)
+app.logger.setLevel(logging.ERROR)
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
 
 @app.route("/", methods=["GET"])
 def index():
@@ -74,6 +77,7 @@ def send_network_request(url):
 
     # Fixes some issues with requesting HTTPS on HTTP sites.
     if r is None:
+        print(f"{url} has an empty response")
         return "down"
 
     app.logger.debug(f"{url} returned HTTP status code: {r.status_code}")
@@ -83,10 +87,11 @@ def send_network_request(url):
         return "online"
 
     # If the server is presenting us with a DDoS protection challenge.
-    if r.status_code == 503 or r.status_code == 403 and r.headers["Server"] == "cloudflare" or \
+    if r.status_code in [401, 403, 503] and r.headers["Server"] == "cloudflare" or \
        r.status_code == 403 and r.headers["Server"] == "ddos-guard":
         return "cloudflare"
 
+    print(f"{url} down, response: {r}")
     # If we did not receive a valid HTTP status code, mark as down.
     return "down"
 
