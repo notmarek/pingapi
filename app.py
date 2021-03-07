@@ -82,8 +82,9 @@ def send_network_request(url):
     if r.status_code in [200, 300, 301, 302, 307, 308]:
         return "online"
 
-    # If the server is presenting us with a (presumable) Cloudflare challenge.
-    if r.status_code == 503 and r.headers["Server"] == "cloudflare":
+    # If the server is presenting us with a DDoS protection challenge.
+    if r.status_code == 503 and r.headers["Server"] == "cloudflare" or \
+       r.status_code == 403 and r.headers["Server"] == "ddos-guard":
         return "cloudflare"
 
     # If we did not receive a valid HTTP status code, mark as down.
