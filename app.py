@@ -64,7 +64,7 @@ def send_network_request(url):
     try:
         # Use generic headers to evade some WAF.
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36"}
-        r = session.head(url, headers=headers, timeout=7, allow_redirects=True)
+        r = session.get(url, headers=headers, timeout=7, allow_redirects=True)
     except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
         app.logger.error(f"Received connection error or timeout attempting to GET: {url}")
         return "down"
