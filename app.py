@@ -77,7 +77,6 @@ def send_network_request(url):
 
     # Fixes some issues with requesting HTTPS on HTTP sites.
     if r is None:
-        print(f"{url} has an empty response")
         return "down"
 
     app.logger.debug(f"{url} returned HTTP status code: {r.status_code}")
@@ -91,7 +90,6 @@ def send_network_request(url):
        r.status_code == 403 and r.headers["Server"] == "ddos-guard":
         return "cloudflare"
 
-    print(f"{url} down, response: {r}")
     # If we did not receive a valid HTTP status code, mark as down.
     return "down"
 
