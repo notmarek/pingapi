@@ -10,7 +10,7 @@ from flask_cors import CORS, cross_origin
 app = Flask(__name__)
 cache = Cache(config={'CACHE_TYPE': 'simple'})
 cache.init_app(app)
-app.config['CORS_ORIGINS'] = ['piracy.moe', 'localhost']
+app.config['CORS_ORIGINS'] = ['https://piracy.moe', 'http://localhost:5000']
 cors = CORS(app)
 
 # Sets up basic logging
