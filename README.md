@@ -4,9 +4,9 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/ranimepiracy?label=%40ranimepiracy&logo=twitter&style=flat)](https://twitter.com/ranimepiracy)
 [![Discord](https://img.shields.io/discord/622243127435984927?label=Discord&logo=discord)](https://discord.gg/piracy)
 
-# piracy.moe index
+# ping-api for index
 
-This repository is the web-ui of /r/animepiracy index.
+This repository is the ping-api of /r/animepiracy index.
 
 If you want to just report missing or false data, please go over to our [Discord](https://discord.gg/piracy) and report
 it in `#index`.
@@ -16,42 +16,27 @@ it in `#index`.
 The easiest way is to use docker via:
 
 ```
-docker run -d -p <host-port>:8080 -v /path/on/host:/config ranimepiracy/index
+docker run -d -p <host-port>:5000 -v /path/on/host:/config docker.pkg.github.com/ranimepiracy/pingapi/pingapi
 ```
 
 You'll need to change `<host-port>` to your port of choice. The web-server is not secured via SSL/TLS, it is in your
 responsibility to put a reverse proxy in front of this container.
-
-Alternatively you can use Github's package repository and instead use:
-
-```
-docker run -d -p <host-port>:8080 -v /path/on/host:/config docker.pkg.github.com/ranimepiracy/index/index-web
-```
-
-## Config
-
-You will need to provide a `config.py` file in `/config`, which you should have mounted via [container volumes](https://docs.docker.com/storage/volumes/). You can copy our [example configuration](config.example.py) and modify it to
-your needs. Alternatively you can wget it via:
-
-```
-wget https://raw.githubusercontent.com/ranimepiracy/index/master/config.example.py
-```
 
 ## Building from source
 
 To build the [docker image](https://docs.docker.com/engine/reference/commandline/build/) you will need to run:
 
 ```
-docker build . -t index-web
+docker build . -t pingapi
 ```
 
 Afterwards you will just need to run
 
 ```
-docker run -d -p <host-port>:8080 index-web
+docker run -d -p <host-port>:5000 pingapi
 ```
 
-You can than open http://localhost:8080 in your browser.
+You can than open http://localhost:5000 in your browser.
 
 # Contribution
 
@@ -63,9 +48,8 @@ our ideas, and we find some time, we will certainly implement your requested fea
 
 # What we use
 to build this website:
-- [Bootstrap 5](https://getbootstrap.com/)
-- [Tabulator](http://tabulator.info/)
 - [Flask](https://github.com/pallets/flask)
-- [Flask-Discord](https://github.com/weibeu/Flask-Discord)
 - [Flask-Caching](https://github.com/sh4nks/flask-caching)
+- [Flask-Cors](https://github.com/corydolphin/flask-cors)
+- [requests](https://github.com/psf/requests)
 - [gunicorn](https://gunicorn.org/)
