@@ -31,6 +31,11 @@ def index():
     return redirect("https://piracy.moe", code=302)
 
 
+@app.route("/health", methods=["GET"])
+def index():
+    return "OK", 200
+
+
 # HTTP testing route for ease of use during development.
 @app.route("/test/insecure/<domain>", methods=["GET"])
 def test_inscure(domain):
