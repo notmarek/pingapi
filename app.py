@@ -63,14 +63,12 @@ def ping():
 @cache.memoize(timeout=600)
 def send_network_request(url):
     """ Sends request to URL and returns online or down, cached for 600 seconds. """
-    session = requests.Session()
-
     # Attempts to send the HEAD request to get the status code
     try:
         # Use generic headers to evade some WAF
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36"}
-        r = session.get(url, headers=headers, timeout=7, allow_redirects=True)
+        r = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
     except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
         app.logger.error(f"Received connection error or timeout attempting to GET: {url}")
         return "down"
