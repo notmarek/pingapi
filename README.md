@@ -16,7 +16,7 @@ it in `#index`.
 The easiest way is to use docker via:
 
 ```
-docker run -d --name=pingapi -p <host-port>:5000 -v /path/on/host:/config docker.pkg.github.com/ranimepiracy/pingapi/pingapi
+docker run -d --name=pingapi --restart always -p 5000:5000 -v /path/on/host:/config docker.pkg.github.com/ranimepiracy/pingapi/pingapi
 ```
 
 You'll need to change `<host-port>` to your port of choice. The web-server is not secured via SSL/TLS, it is in your
