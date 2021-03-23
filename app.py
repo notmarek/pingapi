@@ -47,7 +47,7 @@ async def ping():
     the backend for processing. Returns 'online', 'down', 'cloudflare', or 'error'
     """
     # Checks if multiple URLs should be fetched
-    data = request.get_json(force=True)
+    data = await request.get_json(force=True)
     if "urls" not in data:
         # Checks if the URL key exists and has any data
         if "url" not in data:
