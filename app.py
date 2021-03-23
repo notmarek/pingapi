@@ -1,7 +1,5 @@
 import logging
 import re
-import threading
-import asyncio
 import time
 import traceback
 
@@ -11,7 +9,8 @@ from quart_cors import cors, route_cors
 from redis import Redis
 
 app = Quart(__name__)
-app = cors(app, allow_origin=['https://piracy.moe', 'http://localhost:5000', 'http://localhost:8080'])
+app.config["QUART_CORS_ALLOW_ORIGIN"] = ['https://piracy.moe', 'http://localhost:5000', 'http://localhost:8080']
+app = cors(app)
 
 # Sets up basic logging
 logging.basicConfig(format='[%(asctime)s] %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')

@@ -24,7 +24,7 @@ responsibility to put a reverse proxy in front of this container.
 Alternatively you can use Github's package repository and instead use:
 
 ```
-docker run -d -p <host-port>:5000 docker.pkg.github.com/ranimepiracy/pingapi/pingapi
+docker run -d -p <host-port>:5000 --name=pingapi --restart always docker.pkg.github.com/ranimepiracy/pingapi/pingapi
 ```
 
 # Updating container image
