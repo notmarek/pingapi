@@ -1,16 +1,17 @@
 import logging
 import re
 import threading
+import asyncio
 import time
 import traceback
 
 import requests
-from flask import Flask, request, redirect, jsonify
+from quart import Quart, redirect, jsonify, request
 from flask_cors import CORS, cross_origin
 from redis import Redis
 
-app = Flask(__name__)
-app.config['CORS_ORIGINS'] = ['https://piracy.moe', 'http://localhost:5000']
+app = Quart(__name__)
+app.config['CORS_ORIGINS'] = ['https://piracy.moe', 'http://localhost:5000', 'http://localhost:8080']
 cors = CORS(app)
 
 # Sets up basic logging
@@ -30,20 +31,20 @@ def is_url(url):
 
 
 @app.route("/", methods=["GET"])
-def index():
+async def index():
     """  Redirects user to index incase they some how stumbled upon this API. """
     return redirect("https://piracy.moe", code=302)
 
 
 @app.route("/health", methods=["GET"])
-def health():
+async def health():
     """ Heartbeat endpoint for status.piracy.moe. """
     return "OK", 200
 
 
 @app.route("/ping", methods=["POST"])
 @cross_origin()
-def ping():
+async def ping():
     """
     Handles receiving the URL, checking the validity of it, and sends it to
     the backend for processing. Returns 'online', 'down', 'cloudflare', or 'error'
@@ -61,16 +62,15 @@ def ping():
         # Endpoint was sent a valid URL so we can make the request and return the status of the URL
         with Redis(decode_responses=True) as r:
             if r.exists("ping:" + url) and int(time.time()) - int(r.hget("ping:" + url, "time")) > 600:
-                PingThread(url)
+                ping_url(url)
             elif not r.exists("ping:" + url):
-                tr = PingThread(url)
-                tr.thread.join()
+                await ping_url(url)
 
             return jsonify(r.hgetall("ping:" + url))
 
     urls = data["urls"]
     with Redis(decode_responses=True) as r:
-        threads = []
+        tasks = []
         for url in urls:
             if url is None:
                 return "error - url was empty"
@@ -79,11 +79,11 @@ def ping():
                 return "error - url not valid or didn't match regex"
 
             if r.exists("ping:" + url) and int(time.time()) - int(r.hget("ping:" + url, "time")) > 600:
-                PingThread(url)
+                ping_url(url)
             elif not r.exists("ping:" + url):
-                threads.append(PingThread(url))
-        for tr in threads:
-            tr.thread.join()
+                tasks.append(ping_url(url))
+        for tr in tasks:
+            await tr
         return jsonify([r.hgetall("ping:" + url) for url in urls])
 
 
@@ -97,48 +97,42 @@ def update_status(url, status):
     return status
 
 
-class PingThread(object):
-    def __init__(self, url):
-        self.url = url
-        self.thread = threading.Thread(target=self.run, args=())
-        self.thread.daemon = True
-        self.thread.start()
+async def ping_url(url):
+    """ Sends request to URL and returns online or down, cached for 600 seconds. """
+    # Attempts to send the HEAD request to get the status code
+    try:
+        # Use generic headers to evade some WAF
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36"
+        }
+        r = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
+    except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
+        app.logger.error(f"Received connection error or timeout attempting to GET: {url}")
+        return update_status(url, "down")
+    except:
+        app.logger.error(
+            f"Unexpected exception occurred attempting to GET request: {url} {traceback.print_exc()}")
+        print(f"Unexpected exception occurred attempting to GET request: {url} {traceback.print_exc()}")
+        return update_status(url, "down")
 
-    def run(self):
-        """ Sends request to URL and returns online or down, cached for 600 seconds. """
-        # Attempts to send the HEAD request to get the status code
-        try:
-            # Use generic headers to evade some WAF
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36"
-            }
-            r = requests.get(self.url, headers=headers, timeout=10, allow_redirects=True)
-        except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
-            app.logger.error(f"Received connection error or timeout attempting to GET: {self.url}")
-            return update_status(self.url, "down")
-        except:
-            app.logger.error(
-                f"Unexpected exception occurred attempting to GET request: {self.url} {traceback.print_exc()}")
-            return update_status(self.url, "down")
+    # Fixes some issues with requesting HTTPS on HTTP sites
+    if r is None:
+        return update_status(url, "down")
 
-        # Fixes some issues with requesting HTTPS on HTTP sites
-        if r is None:
-            return update_status(self.url, "down")
+    app.logger.debug(f"{url} returned HTTP status code: {r.status_code}")
 
-        app.logger.debug(f"{self.url} returned HTTP status code: {r.status_code}")
+    # If the request returned a valid HTTP status code, return online
+    if r.status_code in [200, 300, 301, 302, 307, 308]:
+        return update_status(url, "online")
 
-        # If the request returned a valid HTTP status code, return online
-        if r.status_code in [200, 300, 301, 302, 307, 308]:
-            return update_status(self.url, "online")
+    # If the server is presenting us with a DDoS protection challenge
+    if r.status_code in [401, 403, 503, 520] and r.headers["Server"] == "cloudflare" or \
+            r.status_code == 403 and r.headers["Server"] == "ddos-guard":
+        update_status(url, "cloudflare")
 
-        # If the server is presenting us with a DDoS protection challenge
-        if r.status_code in [401, 403, 503, 520] and r.headers["Server"] == "cloudflare" or \
-                r.status_code == 403 and r.headers["Server"] == "ddos-guard":
-            update_status(self.url, "cloudflare")
-
-        # If we did not receive a valid HTTP status code, mark as down
-        update_status(self.url, "down")
+    # If we did not receive a valid HTTP status code, mark as down
+    update_status(url, "down")
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=False, port="5000")
+    app.run(host="0.0.0.0", debug=False, port=5000)

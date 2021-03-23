@@ -17,4 +17,4 @@ COPY . /app
 EXPOSE 5000
 HEALTHCHECK CMD curl --fail http://localhost:5000 || exit 1
 
-CMD redis-server --daemonize yes && nginx -g 'pid /tmp/nginx.pid;' && gunicorn --workers 3 -b unix:/tmp/gunicorn.sock "wsgi:create_app()"
+CMD redis-server --daemonize yes && nginx -g 'pid /tmp/nginx.pid;' && hypercorn -k asyncio -w 5 -b unix:/tmp/pingapi.sock "app:app"
