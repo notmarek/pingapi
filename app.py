@@ -9,7 +9,7 @@ from quart_cors import cors, route_cors
 from redis import Redis
 
 app = Quart(__name__)
-app = cors(app, allow_origin='https://piracy.moe')
+app = cors(app, allow_origin=['https://piracy.moe', 'http://localhost'])
 
 # Sets up basic logging
 logging.basicConfig(format='[%(asctime)s] %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
