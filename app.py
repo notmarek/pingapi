@@ -52,6 +52,7 @@ async def ping():
         # Checks if the URL key exists and has any data
         if "url" not in data:
             return "error - url was empty"
+
         url = data["url"]
         if not is_url(url):
             return "error - url not valid or didn't match regex"
@@ -96,7 +97,6 @@ def update_status(url, status):
 
 async def ping_url(url):
     """ Sends request to URL and returns online or down, cached for 600 seconds. """
-    # Attempts to send the HEAD request to get the status code
     try:
         # Use generic headers to evade some WAF
         headers = {
@@ -109,7 +109,6 @@ async def ping_url(url):
     except:
         app.logger.error(
             f"Unexpected exception occurred attempting to GET request: {url} {traceback.print_exc()}")
-        print(f"Unexpected exception occurred attempting to GET request: {url} {traceback.print_exc()}")
         return update_status(url, "down")
 
     # Fixes some issues with requesting HTTPS on HTTP sites
@@ -128,7 +127,7 @@ async def ping_url(url):
         return update_status(url, "cloudflare")
 
     # If we did not receive a valid HTTP status code, mark as down
-    update_status(url, "down")
+    return update_status(url, "down")
 
 
 if __name__ == "__main__":
