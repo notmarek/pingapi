@@ -1,4 +1,3 @@
-import logging
 import os
 
 from quart import Quart, redirect, jsonify, request
@@ -8,14 +7,6 @@ from background import get_status
 
 app = Quart(__name__)
 app = cors(app, allow_origin=[os.environ.get("CORS"), 'http://localhost'])
-
-# Sets up basic logging
-logging.basicConfig(format='[%(asctime)s] %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
-app.logger.setLevel(logging.ERROR)
-
-# Disables logging for every time an endpoint is visited
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
 
 
 @app.route("/", methods=["GET"])
@@ -39,12 +30,11 @@ async def ping():
     """
     # Checks if multiple URLs should be fetched
     data = await request.get_json(force=True)
-    if "urls" not in data:
-        # Checks if the URL key exists and has any data
-        if "url" not in data:
-            return "error - url was empty"
+    if "urls" in data:
+        return jsonify([get_status(url) for url in data["urls"]])
 
-        # Endpoint was sent a valid URL so we can make the request and return the status of the URL
+    # Checks if the URL key exists and has any data
+    if "url" in data:
         return jsonify(get_status(data["url"]))
 
-    return jsonify([get_status(url) for url in data["urls"]])
+    return "Bad Request", 400
