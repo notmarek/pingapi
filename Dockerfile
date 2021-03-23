@@ -14,6 +14,11 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 WORKDIR /app
 COPY . /app
 
+ENV INTERVAL=300
+ENV TIMEOUT=10
+ENV CONNECTIONS=100
+ENV CORS="https://piracy.moe"
+
 EXPOSE 5000
 HEALTHCHECK CMD curl --fail http://localhost:5000/health || exit 1
 

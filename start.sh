@@ -19,5 +19,5 @@ sleep 5
 echo "modify rights of /tmp/pingapi.sock"
 chmod 777 /tmp/pingapi.sock
 
-# prevent container from exiting
-sleep infinity
+# start background service
+python background.py

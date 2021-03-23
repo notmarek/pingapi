@@ -27,6 +27,17 @@ Alternatively you can use Github's package repository and instead use:
 docker run -d -p <host-port>:5000 --name=pingapi --restart always docker.pkg.github.com/ranimepiracy/pingapi/pingapi
 ```
 
+# Parameters
+
+Here is a table of the possible ENV-variables with their default values.
+
+| Parameter | Function |
+| :----: | --- |
+| `-e INTERVAL=300` | Interval in s when online status should be refreshed |
+| `-e TIMEOUT=10` | Timeout for ping requests |
+| `-e CONNECTIONS=100` | How many simultaneous connections for pinging |
+| `-e CORS="https://piracy.moe"` | URL which uses this ping-api |
+
 # Updating container image
 
 When using the image from [docker-hub](https://hub.docker.com/repository/docker/ranimepiracy/pingapi), you will need to
