@@ -1,27 +1,11 @@
 import concurrent.futures
 import logging
 import os
-import re
 import sys
 import time
 
 import requests
 from redis import Redis
-
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.INFO)
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.INFO)
-formatter = logging.Formatter('[%(asctime)s] %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
-handler.setFormatter(formatter)
-log.addHandler(handler)
-
-
-def is_url(url):
-    """ Checks if the URL data received matches our RegEx to verify it's a real URL. """
-    return re.match(
-        r"(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\uffff]{2,})))(?::\d{2,5})?(?:[/?#]\S*)?$",
-        url)
 
 
 def update_status(url, status, t=time.time()):
@@ -37,9 +21,6 @@ def update_status(url, status, t=time.time()):
 def get_status(url):
     if url is None:
         return "error - url was empty"
-
-    if not is_url(url):
-        return "error - url not valid or didn't match regex"
 
     with Redis(decode_responses=True) as r:
         if not r.exists("ping:" + url):
@@ -93,6 +74,14 @@ def eval_status(url, status_code, headers):
 
 # run background task to ping urls as needed
 if __name__ == "__main__":
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.INFO)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('[%(asctime)s] %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
+
     log.info("background service started")
     while True:
         with Redis(decode_responses=True) as r:
