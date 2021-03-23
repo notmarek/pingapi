@@ -1,5 +1,5 @@
-gunicorn
-requests
 Flask
 Flask-Cors
+gunicorn
 redis
+requests

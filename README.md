@@ -10,21 +10,39 @@
 
 This repository is the ping-api of /r/animepiracy index.
 
-If you want to just report missing or false data, please go over to our [Discord](https://discord.gg/piracy) and report
-it in `#index`.
-
 # Getting started
 
 The easiest way is to use docker via:
 
 ```
-docker run -d --name=pingapi --restart always -p 5000:5000 -v /path/on/host:/config docker.pkg.github.com/ranimepiracy/pingapi/pingapi
+docker run -d -p <host-port>:5000 --name=pingapi --restart always ranimepiracy/pingapi
 ```
 
 You'll need to change `<host-port>` to your port of choice. The web-server is not secured via SSL/TLS, it is in your
 responsibility to put a reverse proxy in front of this container.
 
-## Building from source
+Alternatively you can use Github's package repository and instead use:
+
+```
+docker run -d -p <host-port>:5000 docker.pkg.github.com/ranimepiracy/pingapi/pingapi
+```
+
+# Updating container image
+
+When using the image from [docker-hub](https://hub.docker.com/repository/docker/ranimepiracy/pingapi), you will need to
+run:
+
+```
+docker pull ranimepiracy/pingapi
+```
+
+Alternatively with Github's package repository you will need to run:
+
+```
+docker pull docker.pkg.github.com/ranimepiracy/pingapi/pingapi
+```
+
+# Building from source
 
 To build the [docker image](https://docs.docker.com/engine/reference/commandline/build/) you will need to run:
 
@@ -44,14 +62,16 @@ You can than open http://localhost:5000 in your browser.
 
 Pull-requests are always welcome, but may not be always merged as it has to be in align with our idea of the index. If
 you want a certain feature or have an idea, you can always open a feature request
-in [Issues](https://github.com/ranimepiracy/index/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=%5BFEAT%5D)
+in [Issues](https://github.com/ranimepiracy/pingapi/issues/)
 or report it on our [Discord](https://discord.gg/piracy) in `#index` to be discussed. If it is not bad, in align with
 our ideas, and we find some time, we will certainly implement your requested feature (sometime...).
 
 # What we use
+
 to build this website:
+
 - [Flask](https://github.com/pallets/flask)
-- [Flask-Caching](https://github.com/sh4nks/flask-caching)
 - [Flask-Cors](https://github.com/corydolphin/flask-cors)
-- [requests](https://github.com/psf/requests)
 - [gunicorn](https://gunicorn.org/)
+- [redis](https://redis.io/)
+- [requests](https://github.com/psf/requests)

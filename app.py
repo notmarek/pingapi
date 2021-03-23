@@ -49,13 +49,12 @@ def ping():
     the backend for processing. Returns 'online', 'down', 'cloudflare', or 'error'
     """
     # Checks if multiple URLs should be fetched
-    urls = request.get_json('url')["urls"]
-    if urls is None:
+    data = request.get_json(force=True)
+    if "urls" not in data:
         # Checks if the URL key exists and has any data
-        url = request.get_json('url')["url"]
-        if url is None:
+        if "url" not in data:
             return "error - url was empty"
-
+        url = data["url"]
         if not is_url(url):
             return "error - url not valid or didn't match regex"
 
@@ -69,6 +68,7 @@ def ping():
 
             return jsonify(r.hgetall("ping:" + url))
 
+    urls = data["urls"]
     with Redis(decode_responses=True) as r:
         threads = []
         for url in urls:
