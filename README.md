@@ -70,8 +70,8 @@ our ideas, and we find some time, we will certainly implement your requested fea
 
 to build this website:
 
-- [Flask](https://github.com/pallets/flask)
-- [Flask-Cors](https://github.com/corydolphin/flask-cors)
-- [gunicorn](https://gunicorn.org/)
+- [Hypercorn](https://pgjones.gitlab.io/hypercorn/index.html)
+- [Quart](https://pgjones.gitlab.io/quart/index.html)
+- [Quart-Cors](https://pypi.org/project/Quart-CORS/)
 - [redis](https://redis.io/)
 - [requests](https://github.com/psf/requests)

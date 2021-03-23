@@ -7,12 +7,11 @@ import traceback
 
 import requests
 from quart import Quart, redirect, jsonify, request
-from flask_cors import CORS, cross_origin
+from quart_cors import cors, route_cors
 from redis import Redis
 
 app = Quart(__name__)
-app.config['CORS_ORIGINS'] = ['https://piracy.moe', 'http://localhost:5000', 'http://localhost:8080']
-cors = CORS(app)
+app = cors(app, allow_origin=['https://piracy.moe', 'http://localhost:5000', 'http://localhost:8080'])
 
 # Sets up basic logging
 logging.basicConfig(format='[%(asctime)s] %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
@@ -43,7 +42,7 @@ async def health():
 
 
 @app.route("/ping", methods=["POST"])
-@cross_origin()
+@route_cors()
 async def ping():
     """
     Handles receiving the URL, checking the validity of it, and sends it to
