@@ -125,7 +125,7 @@ async def ping_url(url):
     # If the server is presenting us with a DDoS protection challenge
     if r.status_code in [401, 403, 503, 520] and r.headers["Server"] == "cloudflare" or \
             r.status_code == 403 and r.headers["Server"] == "ddos-guard":
-        update_status(url, "cloudflare")
+        return update_status(url, "cloudflare")
 
     # If we did not receive a valid HTTP status code, mark as down
     update_status(url, "down")
