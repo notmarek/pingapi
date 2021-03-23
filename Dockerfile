@@ -2,7 +2,7 @@ FROM python:3.9-alpine
 
 # install nginx
 RUN apk update && \
-    apk add --no-cache nginx
+    apk add --no-cache nginx redis
 
 # install needed python packages
 COPY requirements.txt .
@@ -17,4 +17,4 @@ COPY . /app
 EXPOSE 5000
 HEALTHCHECK CMD curl --fail http://localhost:5000 || exit 1
 
-CMD nginx -g 'pid /tmp/nginx.pid;' && gunicorn --workers 3 -b unix:/tmp/gunicorn.sock "wsgi:create_app()"
+CMD redis-server --daemonize yes && nginx -g 'pid /tmp/nginx.pid;' && gunicorn --workers 3 -b unix:/tmp/gunicorn.sock "wsgi:create_app()"
