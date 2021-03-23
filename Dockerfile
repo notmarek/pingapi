@@ -28,7 +28,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 WORKDIR /app
-COPY --from=builder /usr/local/cargo/bin/pingapi /usr/local/bin/pingapi
+COPY --from=builder /usr/src/pingapi/target/x86_64-unknown-linux-musl/release/pingapi /usr/local/bin/pingapi
 COPY background.py start.sh ./
 
 ENV INTERVAL=300
