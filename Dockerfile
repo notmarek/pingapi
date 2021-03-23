@@ -15,6 +15,6 @@ WORKDIR /app
 COPY . /app
 
 EXPOSE 5000
-HEALTHCHECK CMD curl --fail http://localhost:5000 || exit 1
+HEALTHCHECK CMD curl --fail http://localhost:5000/health || exit 1
 
 CMD redis-server --daemonize yes && nginx -g 'pid /tmp/nginx.pid;' && hypercorn -k asyncio -w 5 -b unix:/tmp/pingapi.sock "app:app"
