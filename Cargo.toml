@@ -3,12 +3,11 @@ name = "pingapi"
 version = "0.1.0"
 authors = ["Yasamato <agent77326@gmail.com>"]
 edition = "2018"
+repository = "https://github.com/ranimepiracy/pingapi"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rocket = "0.4.7"
-rocket_contrib = "0.4.7"
-rocket_cors = "0.5.1"
+actix-web = "3"
 redis = "0.20.0"
-serde-redis = "0.10.0"
+serde = "1.0.125"

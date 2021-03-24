@@ -63,7 +63,7 @@ def eval_status(url, status_code, headers):
 
     # If the server is presenting us with a DDoS protection challenge
     if status_code in [401, 403, 503, 520] and headers["Server"] == "cloudflare" or \
-            status_code == 403 and r.headers["Server"] == "ddos-guard":
+            status_code == 403 and headers["Server"] == "ddos-guard":
         log.info(f"{url} status could not be determined")
         return update_status(url, "unknown")
 

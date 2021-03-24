@@ -10,7 +10,6 @@ COPY Cargo.toml Cargo.toml
 
 RUN mkdir src/ && \
     echo "fn main() {println!(\"if you see this, the build broke\")}" > src/main.rs && \
-    rustup default nightly && \
     cargo build --release && \
     rm -f target/release/deps/pingapi*
 
