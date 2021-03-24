@@ -75,6 +75,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         let cors = Cors::default()
             .allowed_origin("http://localhost")
+            .allowed_origin("https://piracy.moe")
             .allowed_origin_fn(|origin, _req_head| {
                 let u = env::var("CORS").expect("env CORS not found");
                 origin.as_bytes().starts_with(u.as_bytes())
