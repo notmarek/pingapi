@@ -26,7 +26,7 @@ async def health():
 async def ping():
     """
     Handles receiving the URL, checking the validity of it, and sends it to
-    the backend for processing. Returns 'online', 'down', 'cloudflare', or 'error'
+    the backend for processing. Returns 'up', 'down', 'unknown', or 'error'
     """
     # Checks if multiple URLs should be fetched
     data = await request.get_json(force=True)
@@ -36,5 +36,20 @@ async def ping():
     # Checks if the URL key exists and has any data
     if "url" in data:
         return jsonify(get_status(data["url"]))
+
+    return "Bad Request", 400
+
+
+@app.route("/pings", methods=["POST"])
+@route_cors()
+async def pings():
+    """
+    Handles receiving the URLs, checking the validity of it, and sends it to
+    the backend for processing. Returns 'up', 'down', 'unknown', or 'error'
+    """
+    # Checks if multiple URLs should be fetched
+    data = await request.get_json(force=True)
+    if "urls" in data:
+        return jsonify([get_status(url) for url in data["urls"]])
 
     return "Bad Request", 400
