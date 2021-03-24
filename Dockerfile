@@ -1,8 +1,8 @@
-FROM rust as builder
+# ------------------------------------------------------------------------------
+# Cargo Build Stage
+# ------------------------------------------------------------------------------
 
-RUN apt-get update && \
-    apt-get install musl-tools -y && \
-    rustup target add x86_64-unknown-linux-musl
+FROM rust as cargo-build
 
 WORKDIR /usr/src/pingapi
 
@@ -10,25 +10,32 @@ COPY Cargo.toml Cargo.toml
 
 RUN mkdir src/ && \
     echo "fn main() {println!(\"if you see this, the build broke\")}" > src/main.rs && \
-    RUSTFLAGS=-Clinker=musl-gcc cargo build --release --target=x86_64-unknown-linux-musl && \
-    rm -f target/x86_64-unknown-linux-musl/release/deps/pingapi*
+    rustup default nightly && \
+    cargo build --release && \
+    rm -f target/release/deps/pingapi*
 
 COPY src/* ./src
 
-RUN RUSTFLAGS=-Clinker=musl-gcc cargo build --release --target=x86_64-unknown-linux-musl
+RUN cargo build --release && \
+    cargo install --path .
 
-FROM python:3.9-alpine
+# ------------------------------------------------------------------------------
+# Final Stage
+# ------------------------------------------------------------------------------
+FROM python:3.9-slim-buster
+
+COPY --from=cargo-build /usr/local/cargo/bin/pingapi /usr/local/bin/pingapi
 
 # install redis
-RUN apk update && \
-    apk add --no-cache redis
+RUN apt-get update && \
+    apt-get install -y redis && \
+    rm -rf /var/lib/apt/lists/*
 
 # install needed python packages
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 WORKDIR /app
-COPY --from=builder /usr/src/pingapi/target/x86_64-unknown-linux-musl/release/pingapi /usr/local/bin/pingapi
 COPY background.py start.sh ./
 
 ENV INTERVAL=300
@@ -40,4 +47,4 @@ EXPOSE 5000
 HEALTHCHECK CMD curl --fail http://localhost:5000/health || exit 1
 
 # sed is for replacing windows newline
-CMD pingapi && sed -i 's/\r$//' start.sh && sh start.sh
+CMD sed -i 's/\r$//' start.sh && sh start.sh

@@ -4,7 +4,9 @@ echo "starting redis server"
 redis-server --daemonize yes
 
 # start rust api service
-pingapi
+echo "starting webapi"
+pingapi &
 
 # start background service
+echo "starting background ping"
 python background.py
