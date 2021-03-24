@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::env;
 
 use actix_cors::Cors;
-use actix_web::{App, Error, get, HttpResponse, HttpServer, post, Responder, web};
+use actix_web::{App, Error, get, HttpResponse, HttpServer, post, Responder, web, http};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -79,7 +79,10 @@ async fn main() -> std::io::Result<()> {
             .allowed_origin_fn(|origin, _req_head| {
                 let u = env::var("CORS").expect("env CORS not found");
                 origin.as_bytes().starts_with(u.as_bytes())
-            });
+            })
+            .allowed_methods(vec!["GET", "POST"])
+            .allowed_header(http::header::CONTENT_TYPE)
+            .max_age(3600);
         App::new()
             .wrap(cors)
             .service(index)
