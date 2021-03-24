@@ -3,6 +3,7 @@ extern crate redis;
 use std::collections::HashMap;
 use std::env;
 
+use actix_cors::Cors;
 use actix_web::{App, Error, get, HttpResponse, HttpServer, post, Responder, web};
 use serde::Deserialize;
 
@@ -72,7 +73,14 @@ async fn pings(urls: web::Json<Urls>) -> Result<HttpResponse, Error> {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
+        let cors = Cors::default()
+            .allowed_origin("http://localhost")
+            .allowed_origin_fn(|origin, _req_head| {
+                let u = env::var("CORS").expect("env CORS not found");
+                origin.as_bytes().starts_with(u.as_bytes())
+            });
         App::new()
+            .wrap(cors)
             .service(index)
             .service(health)
             .service(ping)
