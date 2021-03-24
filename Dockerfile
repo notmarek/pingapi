@@ -2,7 +2,7 @@
 # Cargo Build Stage
 # ------------------------------------------------------------------------------
 
-FROM rust as cargo-build
+FROM rust:1.50 as cargo-build
 
 WORKDIR /usr/src/pingapi
 
@@ -27,7 +27,7 @@ COPY --from=cargo-build /usr/local/cargo/bin/pingapi /usr/local/bin/pingapi
 
 # install redis
 RUN apt-get update && \
-    apt-get install -y redis && \
+    apt-get install -y --no-install-recommends redis && \
     rm -rf /var/lib/apt/lists/*
 
 # install needed python packages
