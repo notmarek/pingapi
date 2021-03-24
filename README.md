@@ -81,8 +81,6 @@ our ideas, and we find some time, we will certainly implement your requested fea
 
 to build this website:
 
-- [Hypercorn](https://pgjones.gitlab.io/hypercorn/index.html)
-- [Quart](https://pgjones.gitlab.io/quart/index.html)
-- [Quart-Cors](https://pypi.org/project/Quart-CORS/)
+- [Actix](https://actix.rs/)
 - [redis](https://redis.io/)
 - [requests](https://github.com/psf/requests)

@@ -1,18 +1,41 @@
-FROM python:3.9-alpine
+# ------------------------------------------------------------------------------
+# Cargo Build Stage
+# ------------------------------------------------------------------------------
 
-# install nginx
-RUN apk update && \
-    apk add --no-cache nginx redis
+FROM rust as cargo-build
+
+WORKDIR /usr/src/pingapi
+
+COPY Cargo.toml Cargo.toml
+
+RUN mkdir src/ && \
+    echo "fn main() {println!(\"if you see this, the build broke\")}" > src/main.rs && \
+    cargo build --release && \
+    rm -f target/release/deps/pingapi*
+
+COPY src/* ./src
+
+RUN cargo build --release && \
+    cargo install --path .
+
+# ------------------------------------------------------------------------------
+# Final Stage
+# ------------------------------------------------------------------------------
+FROM python:3.9-slim-buster
+
+COPY --from=cargo-build /usr/local/cargo/bin/pingapi /usr/local/bin/pingapi
+
+# install redis
+RUN apt-get update && \
+    apt-get install -y redis && \
+    rm -rf /var/lib/apt/lists/*
 
 # install needed python packages
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# replace default nginx conf
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
 WORKDIR /app
-COPY . /app
+COPY background.py start.sh ./
 
 ENV INTERVAL=300
 ENV TIMEOUT=10
