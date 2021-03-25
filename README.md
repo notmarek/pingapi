@@ -6,17 +6,17 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/ranimepiracy?label=%40ranimepiracy&logo=twitter&style=flat)](https://twitter.com/ranimepiracy)
 [![Discord](https://img.shields.io/discord/622243127435984927?label=Discord&logo=discord)](https://discord.gg/piracy)
 
-# ping-api for index
+# Ping API
 
 A small lightweight API, written in Rust for determining the state of remote web servers. It is developed as the
-ping-api of the /r/animepiracy index.
+Ping API of the [/r/animepiracy index](https://github.com/ranimepiracy/index).
 
 # Getting started
 
 The easiest way is to use docker via:
 
 ```
-docker run -d -p <host-port>:5000 --name=pingapi --restart always ranimepiracy/pingapi
+docker run -d --name=pingapi --restart always -p <host-port>:5000 ranimepiracy/pingapi
 ```
 
 You'll need to change `<host-port>` to your port of choice. The web-server is not secured via SSL/TLS, it is in your
@@ -25,7 +25,7 @@ responsibility to put a reverse proxy in front of this container.
 Alternatively you can use Github's package repository and instead use:
 
 ```
-docker run -d -p <host-port>:5000 --name=pingapi --restart always docker.pkg.github.com/ranimepiracy/pingapi/pingapi
+docker run -d --name=pingapi --restart always -p <host-port>:5000 docker.pkg.github.com/ranimepiracy/pingapi/pingapi
 ```
 
 # Parameters
@@ -34,17 +34,19 @@ Here is a table of the possible ENV-variables with their default values.
 
 | Parameter | Function |
 | :----: | --- |
-| `-e INTERVAL=300` | Interval in s when online status should be refreshed |
+| `-e INTERVAL=300` | Time in s of when a known ping status is considered outdated and automatically refreshed |
 | `-e TIMEOUT=10` | Timeout for ping requests |
-| `-e CONNECTIONS=10` | Number of simultaneous connections for pinging |
 | `-e CORS="https://piracy.moe"` | URL which uses this ping-api |
 
-By default pingapi only allows requests from `http://localhost` and `https://piracy.moe`. You may want to
+Every 2 * `TIMEOUT` the background process will go through the list of known URLs to keep watch of and checks
+if their age is older than `INTERVAL` and if needed, updates the status with a new ping.
+
+By default Ping API only allows requests from `http://localhost` and `https://piracy.moe`. You may want to
 overwrite `CORS` with the URL from which you intend to use the API.
 
 # API
 
-Pingapi supports the following HTTP requests:
+Ping API supports only the following HTTP requests:
 
 - `GET` `/` will make a redirect to the URL provided by the env `CORS`
 - `GET` `/health` returns `200` `OK`
