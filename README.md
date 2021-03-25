@@ -83,4 +83,3 @@ to build this website:
 
 - [Actix](https://actix.rs/)
 - [redis](https://redis.io/)
-- [requests](https://github.com/psf/requests)
