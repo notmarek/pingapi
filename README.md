@@ -8,25 +8,19 @@
 
 # Ping API
 
-A small lightweight API, written in Rust for determining the state of remote web servers. It is developed as the
-Ping API of the [/r/animepiracy index](https://github.com/ranimepiracy/index).
+A small lightweight API, written in Rust for determining the state of remote web servers. It is developed as the Ping
+API of the [/r/animepiracy index](https://github.com/ranimepiracy/index).
 
 # Getting started
 
 The easiest way is to use docker via:
 
 ```
-docker run -d --name=pingapi --restart always -p <host-port>:5000 ranimepiracy/pingapi
+docker run -d -p <host-port>:5000 --name=pingapi ranimepiracy/pingapi
 ```
 
 You'll need to change `<host-port>` to your port of choice. The web-server is not secured via SSL/TLS, it is in your
 responsibility to put a reverse proxy in front of this container.
-
-Alternatively you can use Github's package repository and instead use:
-
-```
-docker run -d --name=pingapi --restart always -p <host-port>:5000 docker.pkg.github.com/ranimepiracy/pingapi/pingapi
-```
 
 # Parameters
 
@@ -38,8 +32,8 @@ Here is a table of the possible ENV-variables with their default values.
 | `-e TIMEOUT=10` | Timeout for ping requests |
 | `-e CORS="https://piracy.moe"` | URL which uses this ping-api |
 
-Every 2 * `TIMEOUT` the background process will go through the list of known URLs to keep watch of and checks
-if their age is older than `INTERVAL` and if needed, updates the status with a new ping.
+Every 2 * `TIMEOUT` the background process will go through the list of known URLs to keep watch of and checks if their
+age is older than `INTERVAL` and if needed, updates the status with a new ping.
 
 By default Ping API only allows requests from `http://localhost` and `https://piracy.moe`. You may want to
 overwrite `CORS` with the URL from which you intend to use the API.
@@ -110,18 +104,14 @@ The background process will process it automatically and then update the values.
 
 # Updating container image
 
-When using the image from [docker-hub](https://hub.docker.com/repository/docker/ranimepiracy/pingapi), you will need to
-run:
+To get the newest version of image from [docker-hub](https://hub.docker.com/repository/docker/ranimepiracy/pingapi), you
+will need to run:
 
 ```
 docker pull ranimepiracy/pingapi
 ```
 
-Alternatively with Github's package repository you will need to run:
-
-```
-docker pull docker.pkg.github.com/ranimepiracy/pingapi/pingapi
-```
+Afterwards you will need to stop and remove your current running instance and start it again.
 
 # Building from source
 

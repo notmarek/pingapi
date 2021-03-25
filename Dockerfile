@@ -37,10 +37,15 @@ RUN apt-get update && \
 
 ENV INTERVAL=300
 ENV TIMEOUT=10
-ENV CONNECTIONS=10
 ENV CORS="https://piracy.moe"
 
 EXPOSE 5000
 HEALTHCHECK CMD curl --fail http://localhost:5000/health || exit 1
+
+LABEL org.opencontainers.image.vendor="/r/animepiracy" \
+      org.opencontainers.image.url="https://ping.piracy.moe" \
+      org.opencontainers.image.description="Ping API of piracy.moe Index" \
+      org.opencontainers.image.title="Ping API" \
+      maintainer="Community of /r/animepiracy"
 
 CMD redis-server --daemonize yes && pingapi
