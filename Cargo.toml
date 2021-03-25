@@ -8,11 +8,10 @@ repository = "https://github.com/ranimepiracy/pingapi"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "3"
+actix-web = { version = "3", features = ["compress", "openssl"] }
 actix-cors = "0.5.4"
 env_logger = "0.8.3"
-futures = "0.3.13"
 log = "0.4.14"
+openssl = "0.10.33"
 redis = "0.20.0"
-reqwest = "0.11.2"
 serde = "1.0.125"

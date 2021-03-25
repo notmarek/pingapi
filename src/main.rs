@@ -1,16 +1,16 @@
 extern crate redis;
 
-use std::collections::HashMap;
 use std::{env, thread};
-use redis::{Commands};
-use log::{info, trace, error, debug};
-use futures::future::join_all;
+use std::collections::HashMap;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use actix_cors::Cors;
-use actix_web::{App, Error, get, HttpResponse, HttpServer, post, Responder, web, http};
+use actix_web::{App, Error, get, http, HttpResponse, HttpServer, post, Responder, web};
+use actix_web::client::{Client, Connector};
+use log::{debug, info, trace};
+use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
+use redis::Commands;
 use serde::Deserialize;
-use std::time::{SystemTime, UNIX_EPOCH, Duration};
-use reqwest::Response;
 
 #[derive(Deserialize)]
 struct Url {
@@ -22,6 +22,12 @@ struct Urls {
     urls: Vec<String>
 }
 
+
+// ------------------------------------------------------------------------------
+// background tasks
+// ------------------------------------------------------------------------------
+
+// returns a new connection to redis server
 fn get_redis_con() -> redis::Connection {
     let client = redis::Client::open("redis://127.0.0.1")
         .expect("Cannot connect to local redis server");
@@ -29,6 +35,7 @@ fn get_redis_con() -> redis::Connection {
         .expect("Connection to redis server failed")
 }
 
+// fetches the current status of given url from the redis server
 fn get_status(url: &String) -> HashMap<String, String> {
     let mut con = get_redis_con();
     let ex: bool = con.exists(format!("ping:{}", url))
@@ -48,6 +55,7 @@ fn get_status(url: &String) -> HashMap<String, String> {
         .expect("Failed to get data from redis server")
 }
 
+// updates the status of given url in the redis server
 fn update_status(url: &String, status: &str) {
     let mut con = get_redis_con();
     let time = get_epoch();
@@ -59,78 +67,67 @@ fn update_status(url: &String, status: &str) {
         .expect("Failed to update redis entry for url");
 }
 
+// returns the current UNIX_EPOCH as Duration
 fn get_epoch() -> Duration {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("SystemTime before UNIX EPOCH!")
 }
 
+// pings given url and upon finish calls update_status with the result
 async fn ping_url(url: &String, timeout: u64) {
-    trace!("Pinging {} with timeout {}", url, timeout);
+    trace!("Pinging {} with timeout {}", url, timeout.to_string());
 
-    let client = reqwest::Client::new();
-    let req = client.head(url)
+    // required for handling https requests
+    let mut builder = SslConnector::builder(SslMethod::tls())
+        .unwrap();
+
+    // disable cert verification, due to lack of local cert
+    builder.set_verify(SslVerifyMode::NONE);
+
+    let client = Client::builder()
         .timeout(Duration::new(timeout, 0))
-        .send()
-        .await;
+        .connector(Connector::new().ssl(builder.build()).finish())
+        .finish();
 
-    match req {
+    let response = client.get(url).send().await;
+
+    match response {
         Ok(res) => {
-            eval_response(url, res);
+            debug!("Ping request of {} succeeded with {:?}", url, res);
+            let status = &res.status().as_u16();
+            let safe: &[u16] = &[200, 300, 301, 302, 307, 308];
+
+            if safe.contains(status) {
+                return update_status(url, "up");
+            }
+
+            let headers = res.headers();
+            if headers.contains_key("Server") {
+                let server = headers.get("Server")
+                    .expect("Failed to parse Server response header")
+                    .to_str().unwrap();
+                let unknown: &[u16] = &[401, 403, 503, 520];
+                let forbidden: &u16 = &403;
+                if unknown.contains(status) && server.eq("cloudflare") ||
+                    status.eq(forbidden) && server.eq("ddos-guard") {
+                    return update_status(url, "unknown");
+                }
+            }
+
+            update_status(url, "down");
         }
         Err(e) => {
-            let mut unknown_error = false;
-            if e.is_timeout() {
-                info!("Timeout of ping {}", url);
-            } else if e.is_builder() {
-                error!("Builder of ping {} failed", url);
-            } else if e.is_request() {
-                info!("Request failure of ping {}", url);
-            } else if e.is_connect() {
-                info!("Connection failure of ping {}", url);
-            } else if e.is_decode() {
-                info!("Decode failure of ping {}", url);
-            } else if e.is_redirect() {
-                if let Some(final_stop) = e.url() {
-                    info!("Ping {} has redirect loop at {}", url, final_stop);
-                } else {
-                    unknown_error = true;
-                }
-            } else {
-                unknown_error = true;
-            }
+            // TODO: implement error catching, see:
+            // https://docs.rs/actix-web/3.3.2/actix_web/client/enum.SendRequestError.html
 
-            if unknown_error {
-                info!("Unexpected error occurred during ping of {}", url);
-            }
+            info!("Unexpected error occurred during ping of {}: {:?}", url, e);
             update_status(url, "down");
         }
     }
 }
 
-fn eval_response(url: &String, res: Response) {
-    let status = &res.status().as_u16();
-    let safe: &[u16] = &[200, 300, 301, 302, 307, 308];
-
-    if safe.contains(status) {
-        return update_status(url, "up");
-    }
-
-    let headers = res.headers();
-    if headers.contains_key("Server") {
-        let server = headers["Server"].to_str()
-            .expect("Failed to parse Server response header");
-        let unknown: &[u16] = &[401, 403, 503, 520];
-        let forbidden: &u16 = &403;
-        if unknown.contains(status) && server.eq("cloudflare") ||
-            status.eq(forbidden) && server.eq("ddos-guard") {
-            return update_status(url, "unknown");
-        }
-    }
-
-    update_status(url, "down");
-}
-
+// background task, which checks when to update known entries of the redis server
 async fn background_scan(interval: u64, timeout: u64) {
     debug!("Running background task");
     let mut con = get_redis_con();
@@ -143,11 +140,19 @@ async fn background_scan(interval: u64, timeout: u64) {
             .expect("Failed to convert string to u64");
         get_epoch().as_secs() - t > interval
     });
+    info!("Found {} urls to be pinged", urls.len());
     if urls.len() > 0 {
         let p = urls.iter().map(|url| ping_url(url, timeout));
-        join_all(p).await;
+        for f in p {
+            f.await;
+        }
     }
 }
+
+
+// ------------------------------------------------------------------------------
+// web service
+// ------------------------------------------------------------------------------
 
 #[get("/")]
 async fn index() -> impl Responder {
