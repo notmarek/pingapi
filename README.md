@@ -8,7 +8,8 @@
 
 # ping-api for index
 
-This repository is the ping-api of /r/animepiracy index.
+A small lightweight API, written in Rust for determining the state of remote web servers. It is developed as the
+ping-api of the /r/animepiracy index.
 
 # Getting started
 
@@ -37,6 +38,73 @@ Here is a table of the possible ENV-variables with their default values.
 | `-e TIMEOUT=10` | Timeout for ping requests |
 | `-e CONNECTIONS=10` | Number of simultaneous connections for pinging |
 | `-e CORS="https://piracy.moe"` | URL which uses this ping-api |
+
+By default pingapi only allows requests from `http://localhost` and `https://piracy.moe`. You may want to
+overwrite `CORS` with the URL from which you intend to use the API.
+
+# API
+
+Pingapi supports the following HTTP requests:
+
+- `GET` `/` will make a redirect to the URL provided by the env `CORS`
+- `GET` `/health` returns `200` `OK`
+- `POST` `/ping` returns a json-object of the following form:
+  ```json
+  {
+  "url": "https://piracy.moe",
+  "time": "1616615820",
+  "status": "up"
+  }
+  ```
+    - `url` is the URL against which the ping has been tested
+    - `time` is the unix epoch timestamp in seconds
+    - `status` can be either `up`, `down` or `unknown`
+
+  It requires a json-object in the request body and `Content-Type` to be `application/json`. The body should be of the
+  form:
+  ```json
+  {
+    "url": "https://piracy.moe"
+  }
+  ```
+
+- `POST` `/pings` returns a json-array of objects, which are of the same form as in `/ping`:
+  ```json
+  [{
+    "url": "https://piracy.moe",
+    "time": "1616615820",
+    "status": "up"
+  },
+  ...,
+  {
+    "url": "https://example.com",
+    "time": "1616615816",
+    "status": "up"
+  }]
+  ```
+
+  It requires a json-array of urls in the request body and `Content-Type` to be `application/json`. The body should be
+  of the form:
+    ```json
+    {
+      "urls": [
+        "https://piracy.moe",
+        "https://example.com"
+      ]
+    }
+    ```
+
+***Note:** when you request a URL for the first time, it will always return an object like this:*
+
+```json
+{
+  "url": "https://piracy.moe",
+  "time": "0",
+  "status": "unknown"
+}
+```
+
+The background process will process it automatically and then update the values.
 
 # Updating container image
 
