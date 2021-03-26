@@ -2,6 +2,7 @@ extern crate redis;
 
 use std::{env, thread};
 use std::collections::HashMap;
+use std::str::from_utf8;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use actix_cors::Cors;
@@ -166,7 +167,7 @@ async fn index() -> impl Responder {
 #[get("/health")]
 async fn health() -> impl Responder {
     debug!("alive");
-    HttpResponse::Ok().body("OK")
+    HttpResponse::Ok().header("Content-Type", "text/html; charset=UTF-8").body("OK")
 }
 
 #[post("/ping")]
@@ -194,11 +195,17 @@ async fn main() {
     HttpServer::new(|| {
         let cors = Cors::default()
             .allowed_origin("http://localhost")
-            .allowed_origin("https://piracy.moe")
-            .allowed_origin_fn(|origin, _req_head| {
+            .allowed_origin_fn(|origin, _| {
                 let u = env::var("CORS")
                     .expect("env CORS not found");
-                origin.as_bytes().starts_with(u.as_bytes())
+                let cors_regex = regex::Regex::new(&*u).unwrap();
+                match from_utf8(origin.as_bytes()) {
+                    Ok(origin_utf8) => cors_regex.is_match(origin_utf8),
+                    Err(_) => {
+                        debug!("Could not decode origin string {:?}", origin);
+                        false
+                    }
+                }
             })
             .allowed_methods(vec!["GET", "POST"])
             .allowed_header(http::header::CONTENT_TYPE)
