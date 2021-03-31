@@ -36,7 +36,7 @@ Here is a table of the possible ENV-variables with their default values.
 Every 2 * `TIMEOUT` the background process will go through the list of known URLs to keep watch of and checks if their
 age is older than `INTERVAL` and if needed, updates the status with a new ping.
 
-By default Ping API only allows requests from `http://localhost` and `https://piracy.moe`. You can overwrite `CORS` with
+By default Ping API only allows requests from `http://localhost:8080` and `https://piracy.moe`. You can overwrite `CORS` with
 a single URL, if you only want to match against it or use any [valid regex string](https://regexr.com/) for matching.
 
 # API

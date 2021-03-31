@@ -194,7 +194,7 @@ async fn main() {
     info!("Starting webservice");
     HttpServer::new(|| {
         let cors = Cors::default()
-            .allowed_origin("http://localhost")
+            .allowed_origin("http://localhost:8080")
             .allowed_origin_fn(|origin, _| {
                 let u = env::var("CORS")
                     .expect("env CORS not found");
