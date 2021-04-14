@@ -12,18 +12,18 @@
 A small lightweight API, written in Rust for determining the state of remote web servers. It is developed as the Ping
 API of the [/r/animepiracy index](https://github.com/ranimepiracy/index).
 
-# Getting started
+## Getting started
 
 The easiest way is to use docker via:
 
-```
+```shell
 docker run -d -p <host-port>:5000 --name=pingapi ranimepiracy/pingapi
 ```
 
 You'll need to change `<host-port>` to your port of choice. The web-server is not secured via SSL/TLS, it is in your
 responsibility to put a reverse proxy in front of this container.
 
-# Parameters
+## Parameters
 
 Here is a table of the possible ENV-variables with their default values.
 
@@ -36,15 +36,18 @@ Here is a table of the possible ENV-variables with their default values.
 Every 2 * `TIMEOUT` the background process will go through the list of known URLs to keep watch of and checks if their
 age is older than `INTERVAL` and if needed, updates the status with a new ping.
 
-By default Ping API only allows requests from `http://localhost:8080` and `https://piracy.moe`. You can overwrite `CORS` with
-a single URL, if you only want to match against it or use any [valid regex string](https://regexr.com/) for matching.
+By default Ping API only allows requests from `http://localhost:8080` and `https://piracy.moe`. You can overwrite `CORS`
+with a single URL, if you only want to match against it or use any [valid regex string](https://regexr.com/) for
+matching.
 
-# API
+## API
 
 Ping API supports only the following HTTP requests:
 
 - `GET` `/` will make a redirect to the URL provided by the env `CORS`
+
 - `GET` `/health` returns `200` `OK`
+
 - `POST` `/ping` returns a json-object of the following form:
   ```json
   {
@@ -103,34 +106,34 @@ Ping API supports only the following HTTP requests:
 
 The background process will process it automatically and then update the values.
 
-# Updating container image
+## Updating container image
 
 To get the newest version of image from [docker-hub](https://hub.docker.com/repository/docker/ranimepiracy/pingapi), you
 will need to run:
 
-```
+```shell
 docker pull ranimepiracy/pingapi
 ```
 
 Afterwards you will need to stop and remove your current running instance and start it again.
 
-# Building from source
+## Building from source
 
 To build the [docker image](https://docs.docker.com/engine/reference/commandline/build/) you will need to run:
 
-```
+```shell
 docker build . -t pingapi
 ```
 
 Afterwards you will just need to run
 
-```
+```shell
 docker run -d -p <host-port>:5000 pingapi
 ```
 
 You can than open http://localhost:5000 in your browser.
 
-# Contribution
+## Contribution
 
 Pull-requests are always welcome, but may not be always merged as it has to be in align with our idea of the index. If
 you want a certain feature or have an idea, you can always open a feature request
@@ -138,7 +141,7 @@ in [Issues](https://github.com/ranimepiracy/pingapi/issues/)
 or report it on our [Discord](https://discord.gg/piracy) in `#index` to be discussed. If it is not bad, in align with
 our ideas, and we find some time, we will certainly implement your requested feature (sometime...).
 
-# What we use
+## What we use
 
 to build this website:
 
