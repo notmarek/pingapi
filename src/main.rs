@@ -213,7 +213,7 @@ async fn pings(urls: web::Json<Urls>) -> Result<HttpResponse, Error> {
 
 #[actix_web::main]
 async fn main() {
-    env_logger::init_from_env(&env::var("LOG_LEVEL").unwrap_or_else("info"));
+    env_logger::init_from_env(&env::var("LOG_LEVEL").unwrap_or("info".to_owned()));
 
     info!("Starting webservice");
     HttpServer::new(|| {
