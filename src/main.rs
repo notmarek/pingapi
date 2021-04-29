@@ -15,12 +15,12 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 struct Url {
-    url: String
+    url: String,
 }
 
 #[derive(Deserialize)]
 struct Urls {
-    urls: Vec<String>
+    urls: Vec<String>,
 }
 
 
@@ -89,13 +89,19 @@ async fn ping_url(url: &String, timeout: u64) {
     let client = Client::builder()
         .timeout(Duration::new(timeout, 0))
         .connector(Connector::new().ssl(builder.build()).finish())
-        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0")
-        .finish();
+        .header("DNT", "1")
+        .header("Referer", "https://piracy.moe/")
+        .header("Pragma", "no-cache")
+        .header("Cache-Control", "no-cache")
+        .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+        .header("Accept-Language", "de,en-US;q=0.7,en;q=0.3")
+        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0");
 
-    let response = client.get(url).send().await;
+
+    let response = client.finish().get(url).send().await;
 
     match response {
-        Ok(res) => {
+        Ok(mut res) => {
             debug!("Ping request of {} succeeded with {:?}", url, res);
             let status = &res.status().as_u16();
             let safe: &[u16] = &[200, 300, 301, 302, 307, 308];
@@ -104,19 +110,32 @@ async fn ping_url(url: &String, timeout: u64) {
                 return update_status(url, "up");
             }
 
-            let headers = res.headers();
-            debug!("{} has headers: {:?}", url, headers);
-            if headers.contains_key("Server") {
-                let server = headers.get("Server")
-                    .expect("Failed to parse Server response header")
-                    .to_str().unwrap();
-                debug!("Server of {} is {}", url, server);
-                let unknown: &[u16] = &[401, 403, 503, 520];
-                let forbidden: &u16 = &403;
-                if unknown.contains(status) && server.eq("cloudflare") ||
-                    status.eq(forbidden) && server.eq("ddos-guard") {
-                    info!("Unknown HTTP status of {}: {}", url, status);
-                    return update_status(url, "unknown");
+            let body = res.body().await;
+            match body {
+                Ok(b) => {
+                    debug!("{} has body {:?}", url, std::str::from_utf8(b.as_ref()).unwrap());
+                }
+                Err(e) => {
+                    debug!("{} failed to parse body {:?}", url, e);
+                }
+            }
+
+            // separate block for immutable borrow of response
+            {
+                let headers = res.headers();
+                debug!("{} has headers {:?}", url, headers);
+                if headers.contains_key("Server") {
+                    let server = headers.get("Server")
+                        .expect("Failed to parse Server response header")
+                        .to_str().unwrap();
+                    debug!("Server of {} is {}", url, server);
+                    let unknown: &[u16] = &[401, 403, 503, 520];
+                    let forbidden: &u16 = &403;
+                    if unknown.contains(status) && server.eq("cloudflare") ||
+                        status.eq(forbidden) && server.eq("ddos-guard") {
+                        info!("Unknown HTTP status of {}: {}", url, status);
+                        return update_status(url, "unknown");
+                    }
                 }
             }
 
@@ -194,6 +213,7 @@ async fn pings(urls: web::Json<Urls>) -> Result<HttpResponse, Error> {
 
 #[actix_web::main]
 async fn main() {
+    // change to "debug" if you want to debug the responses
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     info!("Starting webservice");
