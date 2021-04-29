@@ -32,7 +32,7 @@ Here is a table of the possible ENV-variables with their default values.
 | `-e INTERVAL=300` | Time in s of when a known ping status is considered outdated and automatically refreshed |
 | `-e TIMEOUT=10` | Timeout for ping requests |
 | `-e CORS="https://piracy.moe"` | Regex of URLs which uses this ping-api |
-| `-e LOG_LEVEL="info"` | Possible log-levels: `error`, `warn`, `info`, `debug` or `trace` |
+| `-e RUST_LOG="info"` | Possible log-levels: `error`, `warn`, `info`, `debug` or `trace` |
 
 Every 2 * `TIMEOUT` the background process will go through the list of known URLs to keep watch of and checks if their
 age is older than `INTERVAL` and if needed, updates the status with a new ping.
