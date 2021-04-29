@@ -105,18 +105,22 @@ async fn ping_url(url: &String, timeout: u64) {
             }
 
             let headers = res.headers();
+            debug!("{} has headers: {:?}", url, headers);
             if headers.contains_key("Server") {
                 let server = headers.get("Server")
                     .expect("Failed to parse Server response header")
                     .to_str().unwrap();
+                debug!("Server of {} is {}", url, server);
                 let unknown: &[u16] = &[401, 403, 503, 520];
                 let forbidden: &u16 = &403;
                 if unknown.contains(status) && server.eq("cloudflare") ||
                     status.eq(forbidden) && server.eq("ddos-guard") {
+                    info!("Unknown HTTP status of {}: {}", url, status);
                     return update_status(url, "unknown");
                 }
             }
 
+            info!("{} is down: HTTP status {}", url, status);
             update_status(url, "down");
         }
         Err(e) => {
