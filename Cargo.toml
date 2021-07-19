@@ -10,6 +10,7 @@ repository = "https://github.com/ranimepiracy/pingapi"
 [dependencies]
 actix-web = { version = "3", features = ["compress", "openssl"] }
 actix-cors = "0.5.4"
+actix-socks = { git = "https://github.com/ranimepiracy/actix-socks" }
 env_logger = "0.8.3"
 log = "0.4.14"
 openssl = "0.10.33"

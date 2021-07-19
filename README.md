@@ -33,6 +33,9 @@ Here is a table of the possible ENV-variables with their default values.
 | `-e TIMEOUT=10` | Timeout for ping requests |
 | `-e CORS="https://piracy.moe"` | Regex of URLs which uses this ping-api |
 | `-e RUST_LOG="info"` | Possible log-levels: `error`, `warn`, `info`, `debug` or `trace` |
+| `-e SOCKS_IP=""` | IP:PORT of SOCKS server for requests |
+| `-e SOCKS_USER=""` | Username for SOCKS server |
+| `-e SOCKS_PASS=""` | Password for SOCKS server |
 
 Every 2 * `TIMEOUT` the background process will go through the list of known URLs to keep watch of and checks if their
 age is older than `INTERVAL` and if needed, updates the status with a new ping.

@@ -6,6 +6,7 @@ use std::str::from_utf8;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use actix_cors::Cors;
+use actix_socks::SocksConnector;
 use actix_web::{App, Error, get, http, HttpResponse, HttpServer, post, Responder, web};
 use actix_web::client::{Client, Connector};
 use log::{debug, info, trace};
@@ -76,7 +77,7 @@ fn get_epoch() -> Duration {
 }
 
 // pings given url and upon finish calls update_status with the result
-async fn ping_url(url: &String, timeout: u64) {
+async fn ping_url(url: &String, timeout: u64, socks_ip: &'static str) {
     trace!("Pinging {} with timeout {}", url, timeout.to_string());
 
     // required for handling https requests
@@ -86,9 +87,21 @@ async fn ping_url(url: &String, timeout: u64) {
     // disable cert verification, due to lack of local cert
     builder.set_verify(SslVerifyMode::NONE);
 
+    let socks_user = env::var("SOCKS_USER").expect("env SOCKS_USER not found");
+    let socks_pass = env::var("SOCKS_PASS").expect("env SOCKS_PASS not found");
+
     let client = Client::builder()
         .timeout(Duration::new(timeout, 0))
         .connector(Connector::new().ssl(builder.build()).finish())
+        .connector(
+            Connector::new().connector(
+                SocksConnector(
+                    socks_ip,
+                    socks_user.to_string(),
+                    socks_pass.to_string())
+                )
+            .finish()
+        )
         .header("DNT", "1")
         .header("Referer", "https://piracy.moe/")
         .header("Pragma", "no-cache")
@@ -153,7 +166,7 @@ async fn ping_url(url: &String, timeout: u64) {
 }
 
 // background task, which checks when to update known entries of the redis server
-async fn background_scan(interval: u64, timeout: u64) {
+async fn background_scan(interval: u64, timeout: u64, socks_ip: &'static str) {
     debug!("Running background task");
     let mut con = get_redis_con();
     let mut urls = con.smembers::<&str, Vec<String>>("urls")
@@ -167,7 +180,7 @@ async fn background_scan(interval: u64, timeout: u64) {
     });
     info!("Found {} urls to be pinged", urls.len());
     if urls.len() > 0 {
-        let p = urls.iter().map(|url| ping_url(url, timeout));
+        let p = urls.iter().map(|url| ping_url(url, timeout, socks_ip));
         for f in p {
             f.await;
         }
@@ -245,6 +258,9 @@ async fn main() {
         .expect("Failed to launch web service")
         .run();
 
+    let _socks_ip = env::var("SOCKS_IP").expect("env SOCKS_IP not found");
+    let socks_ip: &'static str = Box::leak(_socks_ip.into_boxed_str());
+
     info!("Starting pingapi");
     let interval = env::var("INTERVAL")
         .expect("env INTERVAL not found")
@@ -255,7 +271,7 @@ async fn main() {
         .parse::<u64>()
         .expect("Failed to convert TIMEOUT to u64");
     loop {
-        background_scan(interval, timeout).await;
+        background_scan(interval, timeout, socks_ip).await;
         thread::sleep(Duration::from_secs(timeout * 2));
     }
 }
