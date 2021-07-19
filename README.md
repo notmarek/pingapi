@@ -33,9 +33,9 @@ Here is a table of the possible ENV-variables with their default values.
 | `-e TIMEOUT=10` | Timeout for ping requests |
 | `-e CORS="https://piracy.moe"` | Regex of URLs which uses this ping-api |
 | `-e RUST_LOG="info"` | Possible log-levels: `error`, `warn`, `info`, `debug` or `trace` |
-| `-e SOCKS_IP=""` | IP:PORT of SOCKS server for requests |
-| `-e SOCKS_USER=""` | Username for SOCKS server |
-| `-e SOCKS_PASS=""` | Password for SOCKS server |
+| `-e SOCKS_IP=""` | IP:PORT of the SOCKS server for ping requests |
+| `-e SOCKS_USER=""` | Username for SOCKS server for ping requests |
+| `-e SOCKS_PASS=""` | Password for SOCKS server for ping requests |
 
 Every 2 * `TIMEOUT` the background process will go through the list of known URLs to keep watch of and checks if their
 age is older than `INTERVAL` and if needed, updates the status with a new ping.
@@ -142,12 +142,13 @@ You can than open http://localhost:5000 in your browser.
 Pull-requests are always welcome, but may not be always merged as it has to be in align with our idea of the index. If
 you want a certain feature or have an idea, you can always open a feature request
 in [Issues](https://github.com/ranimepiracy/pingapi/issues/)
-or report it on our [Discord](https://discord.gg/piracy) in `#index` to be discussed. If it is not bad, in align with
+or report it on our [Discord](https://discord.gg/piracy) in `#index-wiki` to be discussed. If it is not bad, in align with
 our ideas, and we find some time, we will certainly implement your requested feature (sometime...).
 
 ## What we use
 
-to build this website:
+to build this API:
 
 - [Actix](https://actix.rs/)
+- [actix-socks](https://github.com/ranimepiracy/actix-socks)
 - [redis](https://redis.io/)
