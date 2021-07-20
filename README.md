@@ -9,70 +9,69 @@
 
 # Ping API
 
-A small lightweight API, written in Rust for determining the state of remote web servers. It is developed as the Ping
+A small lightweight API, written in Rust for determining the state of remote web servers. It is developed as the ping
 API of the [/r/animepiracy index](https://github.com/ranimepiracy/index).
 
 ## Getting started
 
-The easiest way is to use docker via:
+The easiest way is to use Docker via:
 
 ```shell
 docker run -d -p <host-port>:5000 --name=pingapi ranimepiracy/pingapi
 ```
 
-You'll need to change `<host-port>` to your port of choice. The web-server is not secured via SSL/TLS, it is in your
+You'll need to change `<host-port>` to your port of choice. The web server is not secured via SSL/TLS, it is your
 responsibility to put a reverse proxy in front of this container.
 
 ## Parameters
 
-Here is a table of the possible ENV-variables with their default values.
+Below is a table of the possible ENV variables with their default values:
 
 | Parameter | Function |
 | :----: | --- |
-| `-e INTERVAL=300` | Time in s of when a known ping status is considered outdated and automatically refreshed |
+| `-e INTERVAL=300` | Time in seconds of when a known ping status is considered outdated and automatically refreshed |
 | `-e TIMEOUT=10` | Timeout for ping requests |
-| `-e CORS="https://piracy.moe"` | Regex of URLs which uses this ping-api |
-| `-e RUST_LOG="info"` | Possible log-levels: `error`, `warn`, `info`, `debug` or `trace` |
+| `-e CORS="https://piracy.moe"` | Regex of URLs which uses this ping API |
+| `-e RUST_LOG="info"` | Possible log levels: `error`, `warn`, `info`, `debug` or `trace` |
 | `-e SOCKS_IP=""` | IP:PORT of the SOCKS server for ping requests |
 | `-e SOCKS_USER=""` | Username for SOCKS server for ping requests |
 | `-e SOCKS_PASS=""` | Password for SOCKS server for ping requests |
 
-Every 2 * `TIMEOUT` the background process will go through the list of known URLs to keep watch of and checks if their
-age is older than `INTERVAL` and if needed, updates the status with a new ping.
+Every 2 * `TIMEOUT`, the background process will go through the list of known URLs and checks if their
+age is older than `INTERVAL` and if needed, will update the status with the latest ping results.
 
-By default Ping API only allows requests from `http://localhost:8080` and `https://piracy.moe`. You can overwrite `CORS`
-with a single URL, if you only want to match against it or use any [valid regex string](https://regexr.com/) for
-matching.
+By default, the ping API allows requests from `http://localhost:8080` and `https://piracy.moe`. You can overwrite `CORS`
+with a single URL or any [valid regex string](https://regexr.com/) for matching.
 
 ## API
 
-Ping API supports only the following HTTP requests:
+Ping API supports the following HTTP requests:
 
-- `GET` `/` will make a redirect to the URL provided by the env `CORS`
+- `GET` `/` will redirect to the URL provided by the env `CORS`
 
 - `GET` `/health` returns `200` `OK`
 
-- `POST` `/ping` returns a json-object of the following form:
+- `POST` `/ping` returns a JSON object in the following format:
   ```json
   {
-  "url": "https://piracy.moe",
-  "time": "1616615820",
-  "status": "up"
+    "url": "https://piracy.moe",
+    "time": "1616615820",
+    "status": "up"
   }
   ```
     - `url` is the URL against which the ping has been tested
-    - `time` is the unix epoch timestamp in seconds
+    - `time` is the Unix epoch timestamp in seconds
     - `status` can be either `up`, `down` or `unknown`
 
-  It requires a json-object in the request body and `Content-Type` to be `application/json`. The body should be of the
-  form:
+  `/ping` requires a JSON object in the request body and the `Content-Type` to be set to `application/json`. 
+  The body should be in the following format:
   ```json
   {
     "url": "https://piracy.moe"
   }
   ```
 
-- `POST` `/pings` returns a json-array of objects, which are of the same form as in `/ping`:
+- `POST` `/pings` returns a JSON array of objects, which are in the same format as the `/ping` endpoint:
   ```json
   [{
     "url": "https://piracy.moe",
@@ -87,8 +86,8 @@ Ping API supports only the following HTTP requests:
   }]
   ```
 
-  It requires a json-array of urls in the request body and `Content-Type` to be `application/json`. The body should be
-  of the form:
+  It requires a JSON array of URLs in the request body and the `Content-Type` to be set to `application/json`. 
+  The body should be in the following format:
     ```json
     {
       "urls": [
@@ -98,7 +97,7 @@ Ping API supports only the following HTTP requests:
     }
     ```
 
-***Note:** when you request a URL for the first time, it will always return an object like this:*
+***Note:** When you request a URL for the first time, the initial POST will always return an object like this:*
 
 ```json
 {
@@ -108,38 +107,37 @@ Ping API supports only the following HTTP requests:
 }
 ```
 
-The background process will process it automatically and then update the values.
+The background task will process it automatically and then update the values for subsquent requests.
 
 ## Updating container image
 
-To get the newest version of image from [docker-hub](https://hub.docker.com/repository/docker/ranimepiracy/pingapi), you
-will need to run:
+To get the newest version of image from [Docker Hub](https://hub.docker.com/repository/docker/ranimepiracy/pingapi), you can run the following:
 
 ```shell
 docker pull ranimepiracy/pingapi
 ```
 
-Afterwards you will need to stop and remove your current running instance and start it again.
+Afterwards, you will need to stop and remove your current running instance and start it again.
 
 ## Building from source
 
-To build the [docker image](https://docs.docker.com/engine/reference/commandline/build/) you will need to run:
+To build the [Docker image](https://docs.docker.com/engine/reference/commandline/build/), you will need to run:
 
 ```shell
 docker build . -t pingapi
 ```
 
-Afterwards you will just need to run
+Afterwards, you will just need to run:
 
 ```shell
 docker run -d -p <host-port>:5000 pingapi
 ```
 
-You can than open http://localhost:5000 in your browser.
+You can then open http://localhost:5000 in your browser.
 
 ## Contribution
 
-Pull-requests are always welcome, but may not be always merged as it has to be in align with our idea of the index. If
+Pull requests are always welcome, but may not be always merged as it has to be in align with our ideas for the ping API. If
 you want a certain feature or have an idea, you can always open a feature request
 in [Issues](https://github.com/ranimepiracy/pingapi/issues/)
 or report it on our [Discord](https://discord.gg/piracy) in `#index-wiki` to be discussed. If it is not bad, in align with
