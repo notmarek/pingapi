@@ -37,6 +37,9 @@ RUN apt-get update && \
 ENV INTERVAL=300
 ENV TIMEOUT=10
 ENV CORS="https://piracy.moe"
+ENV SOCKS_USER="USER"
+ENV SOCKS_PASS="SECRET"
+ENV FLARESOLVERR="FLARE_URL"
 
 EXPOSE 5000
 HEALTHCHECK CMD curl --fail http://localhost:5000/health || exit 1

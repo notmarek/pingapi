@@ -1,7 +1,6 @@
 extern crate redis;
 
 use std::collections::HashMap;
-use std::iter::FromIterator;
 use std::str::from_utf8;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{env, fmt, thread};
@@ -111,18 +110,15 @@ static USER_AGENT: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0";
 
 lazy_static::lazy_static! {
-    static ref HEADERS_MAP: HashMap<&'static str, &'static str> = {
-        let headers_map = HashMap::from_iter([
-            ("DNT", "1"),
-            ("Referer", "https://piracy.moe/"),
-            ("Pragma", "no-cache"),
-            ("Cache-Control", "no-cache"),
-            ("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"),
-            ("Accept-Language", "de,en-US;q=0.7,en;q=0.3"),
-            ("User-Agent", USER_AGENT),
-        ]);
-        headers_map
-    };
+    static ref HEADERS_MAP: HashMap<&'static str, &'static str> = [
+        ("DNT", "1"),
+        ("Referer", "https://piracy.moe/"),
+        ("Pragma", "no-cache"),
+        ("Cache-Control", "no-cache"),
+        ("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"),
+        ("Accept-Language", "de,en-US;q=0.7,en;q=0.3"),
+        ("User-Agent", USER_AGENT),
+    ].iter().cloned().collect();
 }
 
 async fn ping_flaresolverr(
