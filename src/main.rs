@@ -3,11 +3,11 @@ extern crate redis;
 use actix_cors::Cors;
 use actix_web::{get, http, post, web, App, Error, HttpResponse, HttpServer, Responder};
 use log::{debug, info, trace};
-use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use redis::Commands;
 use reqwest::Client;
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::iter::FromIterator;
 use std::str::from_utf8;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{env, thread};
@@ -81,6 +81,123 @@ fn get_epoch() -> Duration {
         .expect("SystemTime before UNIX EPOCH!")
 }
 
+#[derive(Copy, Clone, Debug)]
+enum Status {
+    Up,
+    Down,
+    Unknown,
+}
+
+impl Status {
+    fn to_str(self) -> &'static str {
+        match self {
+            Self::Up => "up",
+            Self::Down => "down",
+            Self::Unknown => "unknown",
+        }
+    }
+}
+
+impl std::fmt::Display for Status {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.to_str().fmt(f)
+    }
+}
+
+static USER_AGENT: &str =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0";
+
+lazy_static::lazy_static! {
+    static ref HEADERS_MAP: HashMap<&'static str, &'static str> = {
+        let headers_map = HashMap::from_iter([
+            ("DNT", "1"),
+            ("Referer", "https://piracy.moe/"),
+            ("Pragma", "no-cache"),
+            ("Cache-Control", "no-cache"),
+            ("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"),
+            ("Accept-Language", "de,en-US;q=0.7,en;q=0.3"),
+            ("User-Agent", USER_AGENT),
+        ]);
+        headers_map
+    };
+}
+
+async fn ping_flaresolverr(
+    url: String,
+    client: &Client,
+    user_agent: String,
+    max_timeout: u64,
+) -> Status {
+    let flaresolverr_url = env::var("FLARESOLVERR").expect("env FLARESOLVERR not found");
+    #[derive(serde::Serialize)]
+    struct FlaresolverrRequest {
+        cmd: String,
+        url: String,
+        #[serde(rename = "userAgent")]
+        user_agent: String,
+        #[serde(rename = "maxTimeout")]
+        max_timeout: String,
+        headers: HashMap<String, String>,
+    }
+    let resp = client
+        .post(&flaresolverr_url)
+        .json(&FlaresolverrRequest {
+            cmd: "request.get".to_string(),
+            url: url.clone(),
+            user_agent,
+            max_timeout: max_timeout.to_string(),
+            headers: HEADERS_MAP
+                .iter()
+                .map(|(a, b)| (a.to_string(), b.to_string()))
+                .collect(),
+        })
+        .send()
+        .await;
+
+    match resp {
+        Ok(res) => {
+            debug!(
+                "Ping request of {} through flaresolverr succeeded with {:?}",
+                &url, res
+            );
+            let status = res.status();
+            
+
+            if status.is_success() {
+                return Status::Up;
+            }
+
+            {
+                let headers = res.headers();
+                debug!("{} has headers {:?}", &url, headers);
+                if headers.contains_key("Server") {
+                    let server = headers
+                        .get("Server")
+                        .expect("Failed to parse Server response header")
+                        .to_str()
+                        .unwrap();
+                    debug!("Server of {} is {}", url, server);
+                    if (status.is_client_error() || status.is_server_error()) && server == "cloudflare"
+                        || status.is_server_error() && server == "ddos-guard"
+                    {
+                        info!("Unknown HTTP status of {}: {}", &url, status);
+                        return Status::Unknown;
+                    }
+                }
+            }
+
+            Status::Down
+        }
+        Err(e) => {
+            info!(
+                "Unexpected error occurred during ping of {} through flaresolverr: {:?}",
+                url, e
+            );
+            Status::Down
+        }
+    }
+}
+
 // pings given url and upon finish calls update_status with the result
 async fn ping_url(url: &String, timeout: u64) {
     trace!("Pinging {} with timeout {}", url, timeout.to_string());
@@ -94,7 +211,7 @@ async fn ping_url(url: &String, timeout: u64) {
         builder = builder.proxy(proxy.basic_auth(&socks_user, &socks_pass));
     }
 
-    let client = builder.user_agent("Mozilla/5.0 (piracy.moe; Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0").build().unwrap();
+    let client = builder.user_agent(USER_AGENT).build().unwrap();
 
     let response = client.get(url).send().await;
 
@@ -119,8 +236,9 @@ async fn ping_url(url: &String, timeout: u64) {
                     && server.eq("cloudflare")
                     && server.eq("ddos-guard")
                 {
-                    info!("Unknown HTTP status of {}: {}", url, status);
-                    return update_status(url, "unknown");
+                    info!("Unknown HTTP status of {}, trying flaresolverr: {}", url, status);
+                    let flaresolverr_status = ping_flaresolverr(url.clone(), &client, USER_AGENT.to_string(), timeout).await.to_string();
+                    return update_status(url, &flaresolverr_status);
                 }
             }
 

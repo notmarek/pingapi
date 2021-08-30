@@ -11,9 +11,10 @@ repository = "https://github.com/ranimepiracy/pingapi"
 actix-web = { version = "3", features = ["compress", "openssl"] }
 actix-cors = "0.5.4"
 env_logger = "0.9"
-reqwest = "0.10"
+reqwest = {version="0.10", features=["json"]}
 log = "0.4"
 openssl = "0.10"
 redis = "0.21"
 regex = "1.5"
 serde = "1"
+lazy_static = "1.4"
