@@ -37,6 +37,12 @@ RUN apt-get update && \
 ENV INTERVAL=300
 ENV TIMEOUT=10
 ENV CORS="https://piracy.moe"
+# Uncomment to enable proxy support (doesn't have to be socks5)
+# ENV SOCKS_IP="socks5://127.0.0.1"
+# ENV SOCKS_USER="USER"
+# ENV SOCKS_PASS="SECRET"
+ENV FLARESOLVERR="FLARE_URL"
+
 
 EXPOSE 5000
 HEALTHCHECK CMD curl --fail http://localhost:5000/health || exit 1
