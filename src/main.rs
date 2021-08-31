@@ -153,7 +153,15 @@ async fn ping_flaresolverr(
         })
         .send()
         .await;
-
+    #[derive(Deserialize)]
+    struct FlaresolverrResponse {
+        solution: FlaresolverrSolution,
+    }
+    #[derive(Deserialize)]
+    struct FlaresolverrSolution {
+        status: u16,
+        headers: HashMap<String, String>,
+    }
     match resp {
         Ok(res) => {
             debug!(
@@ -161,28 +169,40 @@ async fn ping_flaresolverr(
                 &url, res
             );
             let status = res.status();
-            
 
-            if status.is_success() {
+            let body = res.bytes().await;
+            let (status, headers) = match body {
+                Ok(b) => {
+                    let s = std::str::from_utf8(b.as_ref()).unwrap();
+                    debug!("{} has body {:?}", url, s);
+
+                    let resp = serde_json::from_str::<FlaresolverrResponse>(s)
+                        .expect("Cannot parse flaresolverr response");
+                    (resp.solution.status, resp.solution.headers)
+                }
+                Err(e) => {
+                    panic!("{} failed to parse body from flaresolverr {:?}", url, e);
+                }
+            };
+            let safe: &[u16] = &[200, 300, 301, 302, 307, 308];
+
+            if safe.contains(&status) {
                 return Status::Up;
             }
 
-            {
-                let headers = res.headers();
-                debug!("{} has headers {:?}", &url, headers);
-                if headers.contains_key("Server") {
-                    let server = headers
-                        .get("Server")
-                        .expect("Failed to parse Server response header")
-                        .to_str()
-                        .unwrap();
-                    debug!("Server of {} is {}", url, server);
-                    if (status.is_client_error() || status.is_server_error()) && server == "cloudflare"
-                        || status.is_server_error() && server == "ddos-guard"
-                    {
-                        info!("Unknown HTTP status of {}: {}", &url, status);
-                        return Status::Unknown;
-                    }
+            debug!("{} has headers {:?}", &url, headers);
+            let unknown: &[u16] = &[401, 403, 503, 520];
+            let forbidden: u16 = 403;
+            if headers.contains_key("Server") {
+                let server = headers
+                    .get("Server")
+                    .expect("Failed to parse Server response header");
+                debug!("Server of {} is {}", url, server);
+                if unknown.contains(&status) && server == "cloudflare"
+                    || forbidden == status && server == "ddos-guard"
+                {
+                    info!("Unknown HTTP status of {}: {}", &url, status);
+                    return Status::Unknown;
                 }
             }
 
@@ -236,8 +256,14 @@ async fn ping_url(url: &String, timeout: u64) {
                     && server.eq("cloudflare")
                     && server.eq("ddos-guard")
                 {
-                    info!("Unknown HTTP status of {}, trying flaresolverr: {}", url, status);
-                    let flaresolverr_status = ping_flaresolverr(url.clone(), &client, USER_AGENT.to_string(), timeout).await.to_string();
+                    info!(
+                        "Unknown HTTP status of {}, trying flaresolverr: {}",
+                        url, status
+                    );
+                    let flaresolverr_status =
+                        ping_flaresolverr(url.clone(), &client, USER_AGENT.to_string(), timeout)
+                            .await
+                            .to_string();
                     return update_status(url, &flaresolverr_status);
                 }
             }
