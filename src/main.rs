@@ -168,7 +168,6 @@ async fn ping_flaresolverr(
                 "Ping request of {} through flaresolverr succeeded with {:?}",
                 &url, res
             );
-            let status = res.status();
 
             let body = res.bytes().await;
             let (status, headers) = match body {
