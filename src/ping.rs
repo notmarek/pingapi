@@ -39,6 +39,10 @@ pub struct Website {
     pub status: Status,
 }
 
+async fn get_redis_connection(client: &redis::Client) -> redis::aio::Connection {
+    client.get_async_connection().await.unwrap()
+}
+
 async fn new_reqwest_client() -> reqwest::Client {
     let proxy_ip = env::var("PROXY_IP").unwrap_or(String::new());
     let proxy_user = env::var("PROXY_USER").unwrap_or(String::new());
@@ -57,12 +61,23 @@ async fn new_reqwest_client() -> reqwest::Client {
     builder.build().unwrap()
 }
 
+pub async fn ping_multiple(urls: &Vec<String>, redis_client: &redis::Client) -> Vec<Website> {
+    let client = new_reqwest_client().await;
+    let mut websites: Vec<Website> = vec![];
+    for url in urls {
+        websites.push(ping(url, redis_client, Some(client.clone())).await)
+    }
+    return websites
+}
+
 pub async fn ping(
     url: &String,
-    redis_connection: redis::aio::Connection,
+    redis_client: &redis::Client,
     reqwest_client: Option<reqwest::Client>,
 ) -> Website {
+    // let redis_con = get_redis_connection(redis_client).await; 
     // TODO: implement redis
+    
     let client = reqwest_client.unwrap_or(new_reqwest_client().await);
     let mut w = Website {
         time: 0,

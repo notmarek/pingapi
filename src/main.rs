@@ -11,12 +11,15 @@ struct Url {
     url: String,
 }
 
+#[derive(Deserialize)]
+struct Urls {
+    urls: Vec<String>,
+}
+
 pub const USER_AGENT: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0";
 
-async fn get_redis_connection(client: &redis::Client) -> redis::aio::Connection {
-    client.get_async_connection().await.unwrap()
-}
+
 
 #[get("/health")]
 async fn health() -> impl Responder {
@@ -28,8 +31,19 @@ async fn ping_url(url: Json<Url>, redis_client: Data<redis::Client>) -> impl Res
     return HttpResponse::Ok().json(
         ping::ping(
             &url.url,
-            get_redis_connection(&redis_client).await,
+            &redis_client,
             None,
+        )
+        .await,
+    );
+}
+
+#[post("/pings")]
+async fn ping_urls(urls: Json<Urls>, redis_client: Data<redis::Client>) -> impl Responder {
+    return HttpResponse::Ok().json(
+        ping::ping_multiple(
+            &urls.urls,
+            &redis_client,
         )
         .await,
     );
@@ -42,6 +56,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .service(health)
             .service(ping_url)
+            .service(ping_urls)
             .app_data(Data::new(redis_client))
     })
     .bind("127.0.0.1:8080")?
