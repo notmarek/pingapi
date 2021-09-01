@@ -1,9 +1,11 @@
 mod ping;
+use actix_cors::Cors;
 use actix_web::{
-    get, post,
+    get, http, post,
     web::{Data, Json},
     App, HttpResponse, HttpServer, Responder,
 };
+use log::{debug, info, trace};
 use serde::Deserialize;
 use std::env;
 
@@ -68,9 +70,27 @@ async fn ping_urls(urls: Json<Urls>, redis_client: Data<redis::Client>) -> impl 
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+    info!("Starting webservice");
     HttpServer::new(|| {
         let redis_client = redis::Client::open("redis://127.0.0.1/").unwrap();
+        let cors = Cors::default()
+            .allowed_origin("http://localhost:8080")
+            .allowed_origin_fn(|origin, _| {
+                let cors_regex = regex::Regex::new(&*CORS).unwrap();
+                match String::from_utf8(origin.as_bytes().to_vec()) {
+                    Ok(origin_utf8) => cors_regex.is_match(&origin_utf8),
+                    Err(_) => {
+                        debug!("Could not decode origin string {:?}", origin);
+                        false
+                    }
+                }
+            })
+            .allowed_methods(vec!["GET", "POST"])
+            .allowed_header(http::header::CONTENT_TYPE)
+            .max_age(3600);
         App::new()
+            .wrap(cors)
             .service(health)
             .service(ping_url)
             .service(ping_urls)
