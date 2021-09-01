@@ -29,6 +29,10 @@ lazy_static::lazy_static! {
     };
 }
 
+lazy_static::lazy_static! {
+    static ref CORS: String = env::var("CORS").unwrap_or(String::from("https://piracy.moe"));
+}
+
 #[derive(Deserialize)]
 struct Url {
     url: String,
@@ -45,6 +49,11 @@ pub const USER_AGENT: &str =
 #[get("/health")]
 async fn health() -> impl Responder {
     HttpResponse::Ok().body("OK")
+}
+
+#[get("/")]
+async fn index() -> impl Responder {
+    HttpResponse::PermanentRedirect().with_header(("Location", (*CORS).clone()))
 }
 
 #[post("/ping")]
@@ -65,6 +74,7 @@ async fn main() -> std::io::Result<()> {
             .service(health)
             .service(ping_url)
             .service(ping_urls)
+            .service(index)
             .app_data(Data::new(redis_client))
     })
     .bind("127.0.0.1:8080")?
