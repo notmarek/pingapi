@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
-use std::{env, time::Duration};
+use std::{
+    env,
+    time::{Duration, SystemTime},
+};
 
 #[derive(Copy, Clone, Debug)]
 pub enum Status {
@@ -34,7 +37,7 @@ impl std::fmt::Display for Status {
 
 #[derive(Serialize, Debug)]
 pub struct Website {
-    pub time: i64,
+    pub time: u64,
     pub url: String,
     pub status: Status,
 }
@@ -43,6 +46,12 @@ const REAL_CF_DOWN: &[u16] = &[500, 502, 504, 520, 521, 522, 523, 524, 525, 526,
 
 async fn get_redis_connection(client: &redis::Client) -> redis::aio::Connection {
     client.get_async_connection().await.unwrap()
+}
+
+async fn get_epoch() -> Duration {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .expect("SystemTime before UNIX EPOCH!")
 }
 
 async fn new_reqwest_client(timeout: u64) -> reqwest::Client {
@@ -89,7 +98,7 @@ pub async fn ping(
 
     let client = reqwest_client.unwrap_or(new_reqwest_client(timeout).await);
     let mut w = Website {
-        time: 0,
+        time: get_epoch().await.as_secs(),
         url: url.to_string(),
         status: Status::Unknown,
     };
