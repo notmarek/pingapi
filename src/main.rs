@@ -5,6 +5,20 @@ use actix_web::{
     App, HttpResponse, HttpServer, Responder,
 };
 use serde::Deserialize;
+use std::env;
+
+lazy_static::lazy_static! {
+    static ref TIMEOUT: u64 = match env::var("FLARESOLVERR") {
+        Ok(t) => {
+            t.parse().unwrap_or(10000)
+        }
+        Err(_) => {
+            10000
+        }
+    };
+
+
+}
 
 #[derive(Deserialize)]
 struct Url {
@@ -19,8 +33,6 @@ struct Urls {
 pub const USER_AGENT: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0";
 
-
-
 #[get("/health")]
 async fn health() -> impl Responder {
     HttpResponse::Ok().body("OK")
@@ -28,25 +40,12 @@ async fn health() -> impl Responder {
 
 #[post("/ping")]
 async fn ping_url(url: Json<Url>, redis_client: Data<redis::Client>) -> impl Responder {
-    return HttpResponse::Ok().json(
-        ping::ping(
-            &url.url,
-            &redis_client,
-            None,
-        )
-        .await,
-    );
+    return HttpResponse::Ok().json(ping::ping(&url.url, &redis_client, None, *TIMEOUT).await);
 }
 
 #[post("/pings")]
 async fn ping_urls(urls: Json<Urls>, redis_client: Data<redis::Client>) -> impl Responder {
-    return HttpResponse::Ok().json(
-        ping::ping_multiple(
-            &urls.urls,
-            &redis_client,
-        )
-        .await,
-    );
+    return HttpResponse::Ok().json(ping::ping_multiple(&urls.urls, &redis_client, *TIMEOUT).await);
 }
 
 #[actix_web::main]
