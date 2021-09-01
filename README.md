@@ -36,6 +36,7 @@ Below is a table of the possible ENV variables with their default values:
 | `-e PROXY_IP=""` | PROTOCOL://IP:PORT of the proxy server for ping requests |
 | `-e PROXY_USER=""` | Username for the PROXY server for ping requests |
 | `-e PROXY_PASS=""` | Password for the PROXY server for ping requests |
+| `-e FLARESOLVERR=""` | Full link to your cloudsolverr instance e.g. `http://127.0.0.1:8191/v1` |
 
 On every request the time of last ping is checked against the current time + `INTERVAL` and if needed, a new ping request is made and saved into redis.
 
