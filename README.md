@@ -30,15 +30,14 @@ Below is a table of the possible ENV variables with their default values:
 | Parameter | Function |
 | :----: | --- |
 | `-e INTERVAL=300` | Time in seconds of when a known ping status is considered outdated and automatically refreshed |
-| `-e TIMEOUT=10` | Timeout for ping requests |
+| `-e TIMEOUT=10000` | Timeout for ping requests in miliseconds |
 | `-e CORS="https://piracy.moe"` | Regex of URLs which uses this ping API |
 | `-e RUST_LOG="info"` | Possible log levels: `error`, `warn`, `info`, `debug` or `trace` |
-| `-e SOCKS_IP=""` | IP:PORT of the SOCKS server for ping requests |
-| `-e SOCKS_USER=""` | Username for SOCKS server for ping requests |
-| `-e SOCKS_PASS=""` | Password for SOCKS server for ping requests |
+| `-e PROXY_IP=""` | PROTOCOL://IP:PORT of the proxy server for ping requests |
+| `-e PROXY_USER=""` | Username for the PROXY server for ping requests |
+| `-e PROXY_PASS=""` | Password for the PROXY server for ping requests |
 
-Every 2 * `TIMEOUT`, the background process will go through the list of known URLs and checks if their
-age is older than `INTERVAL` and if needed, will update the status with the latest ping results.
+On every request the time of last ping is checked against the current time + `INTERVAL` and if needed, a new ping request is made and saved into redis.
 
 By default, the ping API allows requests from `http://localhost:8080` and `https://piracy.moe`. You can overwrite `CORS`
 with a single URL or any [valid regex string](https://regexr.com/) for matching.
@@ -55,7 +54,7 @@ Ping API supports the following HTTP requests:
   ```json
   {
     "url": "https://piracy.moe",
-    "time": "1616615820",
+    "time": 1616615820,
     "status": "up"
   }
   ```
@@ -75,13 +74,13 @@ Ping API supports the following HTTP requests:
   ```json
   [{
     "url": "https://piracy.moe",
-    "time": "1616615820",
+    "time": 1616615820,
     "status": "up"
   },
   ...,
   {
     "url": "https://example.com",
-    "time": "1616615816",
+    "time": 1616615816,
     "status": "up"
   }]
   ```
@@ -97,17 +96,7 @@ Ping API supports the following HTTP requests:
     }
     ```
 
-***Note:** When you request a URL for the first time, the initial POST will always return an object like this:*
-
-```json
-{
-  "url": "https://piracy.moe",
-  "time": "0",
-  "status": "unknown"
-}
-```
-
-The background task will process it automatically and then update the values for subsquent requests.
+***Note:** When you request a URL for the first time, the initial POST will take a little longer (up to 2 x `TIMEOUT`).*
 
 ## Updating container image
 
@@ -147,6 +136,8 @@ our ideas, and we find some time, we will certainly implement your requested fea
 
 to build this API:
 
+- [Rust](https://rust-lang.org/)
 - [Actix](https://actix.rs/)
-- [actix-socks](https://github.com/ranimepiracy/actix-socks)
+- [Reqwest](https://docs.rs/reqwest/)
+- [Serde](https://serde.rs/)
 - [redis](https://redis.io/)
