@@ -104,7 +104,7 @@ pub async fn ping(
                 if headers.contains_key("server") {
                     let server = headers.get("server").unwrap().to_str().unwrap(); // we know that the header exists
                     println!("Server: {}, {}", server, server.eq("cloudflare"));
-                    if (server.eq("cloudflare") && REAL_CF_DOWN.contains(&status.as_u16())) || server.eq("ddos-guard") {
+                    if (server.eq("cloudflare") && !REAL_CF_DOWN.contains(&status.as_u16())) || server.eq("ddos-guard") {
                         // TODO: Use flaresolverr
                         w.status = Status::Unknown;
                         return w
