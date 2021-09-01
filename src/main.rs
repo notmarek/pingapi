@@ -8,7 +8,7 @@ use serde::Deserialize;
 use std::env;
 
 lazy_static::lazy_static! {
-    static ref TIMEOUT: u64 = match env::var("FLARESOLVERR") {
+    static ref TIMEOUT: u64 = match env::var("TIMEOUT") {
         Ok(t) => {
             t.parse().unwrap_or(10000)
         }
@@ -16,8 +16,17 @@ lazy_static::lazy_static! {
             10000
         }
     };
+}
 
-
+lazy_static::lazy_static! {
+    pub static ref INTERVAL: u64 = match env::var("INTERVAL") {
+        Ok(t) => {
+            t.parse().unwrap_or(300)
+        }
+        Err(_) => {
+            300 // 5 minutes
+        }
+    };
 }
 
 #[derive(Deserialize)]

@@ -1,5 +1,7 @@
+use redis::AsyncCommands;
 use serde::{Deserialize, Serialize};
 use std::{
+    collections::HashMap,
     env,
     time::{Duration, SystemTime},
 };
@@ -19,6 +21,16 @@ impl Status {
             Self::Unknown => "unknown",
         }
     }
+
+    fn from_str(str: &str) -> Self {
+        if str == "up" {
+            Self::Up
+        } else if str == "down" {
+            Self::Down
+        } else {
+            Self::Unknown
+        }
+    }
 }
 
 impl ::serde::Serialize for Status {
@@ -35,7 +47,7 @@ impl std::fmt::Display for Status {
     }
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 pub struct Website {
     pub time: u64,
     pub url: String,
@@ -52,6 +64,42 @@ async fn get_epoch() -> Duration {
     SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .expect("SystemTime before UNIX EPOCH!")
+}
+
+async fn update_status(website_status: Website, client: &redis::Client) {
+    let mut con = get_redis_connection(client).await;
+    con.hset_multiple::<String, &str, &String, bool>(
+        format!("ping:{}", website_status.url),
+        &[
+            ("url", &website_status.url),
+            ("time", &website_status.time.to_string()),
+            ("status", &website_status.status.to_string()),
+        ],
+    )
+    .await
+    .expect("Failed to update redis entry for url");
+}
+
+async fn get_last_status(
+    url: &str,
+    client: &redis::Client,
+) -> Result<Website, Box<dyn std::error::Error>> {
+    let mut con = get_redis_connection(client).await;
+    let ex: bool = con.exists(format!("ping:{}", url)).await?;
+    if !ex {
+        return Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "url not found in redis",
+        )));
+    }
+    let raw_data = con
+        .hgetall::<String, HashMap<String, String>>(format!("ping:{}", url))
+        .await?;
+    Ok(Website {
+        url: url.to_string(),
+        time: raw_data.get("time").unwrap().parse::<u64>()?,
+        status: Status::from_str(raw_data.get("status").unwrap()),
+    })
 }
 
 async fn new_reqwest_client(timeout: u64) -> reqwest::Client {
@@ -93,12 +141,15 @@ pub async fn ping(
     reqwest_client: Option<reqwest::Client>,
     timeout: u64,
 ) -> Website {
-    // let redis_con = get_redis_connection(redis_client).await;
-    // TODO: implement redis
-
+    let time = get_epoch().await.as_secs();
+    if let Ok(last_status) = get_last_status(url, redis_client).await {
+        if time - *crate::INTERVAL < last_status.time {
+            return last_status;
+        }
+    }
     let client = reqwest_client.unwrap_or(new_reqwest_client(timeout).await);
     let mut w = Website {
-        time: get_epoch().await.as_secs(),
+        time,
         url: url.to_string(),
         status: Status::Unknown,
     };
@@ -107,18 +158,12 @@ pub async fn ping(
     let status = match res {
         Ok(r) => {
             let status = r.status();
-            println!("URL: {}", url);
-
-            println!("Status: {}", status);
             if status.is_success() || status.is_redirection() {
                 Status::Up
             } else {
                 let headers = r.headers();
-                println!("Headers: {:#?}", headers);
-
                 if headers.contains_key("server") {
                     let server = headers.get("server").unwrap().to_str().unwrap(); // we know that the header exists
-                    println!("Server: {}, {}", server, server.eq("cloudflare"));
                     if (server.eq("cloudflare") && !REAL_CF_DOWN.contains(&status.as_u16()))
                         || server.eq("ddos-guard")
                     {
@@ -134,6 +179,7 @@ pub async fn ping(
         Err(_) => Status::Down,
     };
     w.status = status;
+    update_status(w.clone(), redis_client).await;
     w
 }
 
