@@ -1,4 +1,4 @@
-use serde::{Serialize, __private::ser};
+use serde::Serialize;
 use std::env;
 
 #[derive(Copy, Clone, Debug)]
@@ -38,6 +38,8 @@ pub struct Website {
     pub url: String,
     pub status: Status,
 }
+
+const REAL_CF_DOWN: &[u16] = &[500, 502, 504, 520, 521, 522, 523, 524, 525, 526, 527]; // also 530 but that also includes ip bans and all other 1xxx errors
 
 async fn get_redis_connection(client: &redis::Client) -> redis::aio::Connection {
     client.get_async_connection().await.unwrap()
@@ -102,7 +104,7 @@ pub async fn ping(
                 if headers.contains_key("server") {
                     let server = headers.get("server").unwrap().to_str().unwrap(); // we know that the header exists
                     println!("Server: {}, {}", server, server.eq("cloudflare"));
-                    if server.eq("cloudflare") || server.eq("ddos-guard") {
+                    if (server.eq("cloudflare") && REAL_CF_DOWN.contains(&status.as_u16())) || server.eq("ddos-guard") {
                         // TODO: Use flaresolverr
                         w.status = Status::Unknown;
                         return w
