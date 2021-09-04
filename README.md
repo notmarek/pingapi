@@ -41,10 +41,12 @@ Every 2 * `TIMEOUT`, the background process will go through the list of known UR
 than `INTERVAL` and if needed, will update the status with the latest ping results.
 
 By default, the CORS regex of the ping API is set
-to `^https:\/\/piracy\.moe$|^https:\/\/dev\.piracy\.moe$|^http:\/\/localhost:3000$` and allows requests
+to `^https://piracy.moe$|^https://dev.piracy.moe$|^http://localhost:3000$` and allows requests
 from [`http://localhost:3000`](http://localhost:3000), [`https://piracy.moe`](https://piracy.moe)
 and [`https://dev.piracy.moe`](https://dev.piracy.moe). You can overwrite `CORS`
 any valid [regex expression](https://regexr.com/) for matching.
+
+**NOTE:** rust throws errors if you try to escape special chars like `\/` or `\.` ...
 
 ## API
 

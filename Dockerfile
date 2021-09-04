@@ -36,7 +36,7 @@ RUN apt-get update && \
 
 ENV INTERVAL=300
 ENV TIMEOUT=10
-ENV CORS="^https:\/\/piracy\.moe$|^https:\/\/dev\.piracy\.moe$|^http:\/\/localhost:3000$"
+ENV CORS="^https://piracy.moe$|^https://dev.piracy.moe$|^http://localhost:3000$"
 
 EXPOSE 5000
 HEALTHCHECK CMD curl --fail http://localhost:5000/health || exit 1
