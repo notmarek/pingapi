@@ -28,20 +28,23 @@ responsibility to put a reverse proxy in front of this container.
 Below is a table of the possible ENV variables with their default values:
 
 | Parameter | Function |
-| :----: | --- |
+| :---- | --- |
 | `-e INTERVAL=300` | Time in seconds of when a known ping status is considered outdated and automatically refreshed |
 | `-e TIMEOUT=10` | Timeout for ping requests |
-| `-e CORS="https://piracy.moe"` | Regex of URLs which uses this ping API |
+| `-e CORS="regex"` | Regex of domains which uses this ping API |
 | `-e RUST_LOG="info"` | Possible log levels: `error`, `warn`, `info`, `debug` or `trace` |
 | `-e SOCKS_IP=""` | IP:PORT of the SOCKS server for ping requests |
 | `-e SOCKS_USER=""` | Username for SOCKS server for ping requests |
 | `-e SOCKS_PASS=""` | Password for SOCKS server for ping requests |
 
-Every 2 * `TIMEOUT`, the background process will go through the list of known URLs and checks if their
-age is older than `INTERVAL` and if needed, will update the status with the latest ping results.
+Every 2 * `TIMEOUT`, the background process will go through the list of known URLs and checks if their age is older
+than `INTERVAL` and if needed, will update the status with the latest ping results.
 
-By default, the ping API allows requests from `http://localhost:8080` and `https://piracy.moe`. You can overwrite `CORS`
-with a single URL or any [valid regex string](https://regexr.com/) for matching.
+By default, the CORS regex of the ping API is set
+to `^https:\/\/piracy\.moe$|^https:\/\/dev\.piracy\.moe$|^http:\/\/localhost:3000$` and allows requests
+from [`http://localhost:3000`](http://localhost:3000), [`https://piracy.moe`](https://piracy.moe)
+and [`https://dev.piracy.moe`](https://dev.piracy.moe). You can overwrite `CORS`
+any valid [regex expression](https://regexr.com/) for matching.
 
 ## API
 
@@ -63,8 +66,8 @@ Ping API supports the following HTTP requests:
     - `time` is the Unix epoch timestamp in seconds
     - `status` can be either `up`, `down` or `unknown`
 
-  `/ping` requires a JSON object in the request body and the `Content-Type` to be set to `application/json`. 
-  The body should be in the following format:
+  `/ping` requires a JSON object in the request body and the `Content-Type` to be set to `application/json`. The body
+  should be in the following format:
   ```json
   {
     "url": "https://piracy.moe"
@@ -86,8 +89,8 @@ Ping API supports the following HTTP requests:
   }]
   ```
 
-  It requires a JSON array of URLs in the request body and the `Content-Type` to be set to `application/json`. 
-  The body should be in the following format:
+  It requires a JSON array of URLs in the request body and the `Content-Type` to be set to `application/json`. The body
+  should be in the following format:
     ```json
     {
       "urls": [
@@ -111,7 +114,8 @@ The background task will process it automatically and then update the values for
 
 ## Updating container image
 
-To get the newest version of image from [Docker Hub](https://hub.docker.com/repository/docker/ranimepiracy/pingapi), you can run the following:
+To get the newest version of image from [Docker Hub](https://hub.docker.com/repository/docker/ranimepiracy/pingapi), you
+can run the following:
 
 ```shell
 docker pull ranimepiracy/pingapi
@@ -137,11 +141,11 @@ You can then open http://localhost:5000 in your browser.
 
 ## Contribution
 
-Pull requests are always welcome, but may not be always merged as it has to be in align with our ideas for the ping API. If
-you want a certain feature or have an idea, you can always open a feature request
+Pull requests are always welcome, but may not be always merged as it has to be in align with our ideas for the ping API.
+If you want a certain feature or have an idea, you can always open a feature request
 in [Issues](https://github.com/ranimepiracy/pingapi/issues/)
-or report it on our [Discord](https://discord.gg/piracy) in `#index-wiki` to be discussed. If it is not bad, in align with
-our ideas, and we find some time, we will certainly implement your requested feature (sometime...).
+or report it on our [Discord](https://discord.gg/piracy) in `#index-wiki` to be discussed. If it is not bad, in align
+with our ideas, and we find some time, we will certainly implement your requested feature (sometime...).
 
 ## What we use
 
