@@ -31,7 +31,7 @@ RUN apt-get update && \
         netbase \
         tzdata \
         redis \
-        wget && \
+        curl && \
     rm -rf /var/lib/apt/lists/*
 
 ENV INTERVAL=300
