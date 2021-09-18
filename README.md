@@ -28,7 +28,7 @@ responsibility to put a reverse proxy in front of this container.
 Below is a table of the possible ENV variables with their default values:
 
 | Parameter | Function |
-| :----: | --- |
+| :---- | --- |
 | `-e INTERVAL=300` | Time in seconds of when a known ping status is considered outdated and automatically refreshed |
 | `-e TIMEOUT=10000` | Timeout for ping requests in miliseconds |
 | `-e CORS="https://piracy.moe"` | Regex of URLs which uses this ping API |
@@ -38,10 +38,17 @@ Below is a table of the possible ENV variables with their default values:
 | `-e PROXY_PASS=""` | Password for the PROXY server for ping requests |
 | `-e FLARESOLVERR=""` | Full link to your cloudsolverr instance e.g. `http://127.0.0.1:8191/v1` |
 
-On every request the time of last ping is checked against the current time + `INTERVAL` and if needed, a new ping request is made and saved into redis.
 
-By default, the ping API allows requests from `http://localhost:8080` and `https://piracy.moe`. You can overwrite `CORS`
-with a single URL or any [valid regex string](https://regexr.com/) for matching.
+Every `INTERVAL` the background task updates all urls.
+
+
+By default, the CORS regex of the ping API is set
+to `^https://piracy\\.moe$|^https://dev\\.piracy\\.moe$|^http://localhost:3000$` and allows requests
+from [`http://localhost:3000`](http://localhost:3000), [`https://piracy.moe`](https://piracy.moe)
+and [`https://dev.piracy.moe`](https://dev.piracy.moe). You can overwrite `CORS`
+any valid [regex expression](https://regexr.com/) for matching.
+
+**NOTE:** it's unnecessary to escape `/` and as such disallowed. Keep in mind that you need to double escape in rust.
 
 ## API
 
@@ -63,8 +70,8 @@ Ping API supports the following HTTP requests:
     - `time` is the Unix epoch timestamp in seconds
     - `status` can be either `up`, `down` or `unknown`
 
-  `/ping` requires a JSON object in the request body and the `Content-Type` to be set to `application/json`. 
-  The body should be in the following format:
+  `/ping` requires a JSON object in the request body and the `Content-Type` to be set to `application/json`. The body
+  should be in the following format:
   ```json
   {
     "url": "https://piracy.moe"
@@ -86,8 +93,8 @@ Ping API supports the following HTTP requests:
   }]
   ```
 
-  It requires a JSON array of URLs in the request body and the `Content-Type` to be set to `application/json`. 
-  The body should be in the following format:
+  It requires a JSON array of URLs in the request body and the `Content-Type` to be set to `application/json`. The body
+  should be in the following format:
     ```json
     {
       "urls": [
@@ -101,7 +108,8 @@ Ping API supports the following HTTP requests:
 
 ## Updating container image
 
-To get the newest version of image from [Docker Hub](https://hub.docker.com/repository/docker/ranimepiracy/pingapi), you can run the following:
+To get the newest version of image from [Docker Hub](https://hub.docker.com/repository/docker/ranimepiracy/pingapi), you
+can run the following:
 
 ```shell
 docker pull ranimepiracy/pingapi
@@ -127,11 +135,11 @@ You can then open http://localhost:5000 in your browser.
 
 ## Contribution
 
-Pull requests are always welcome, but may not be always merged as it has to be in align with our ideas for the ping API. If
-you want a certain feature or have an idea, you can always open a feature request
+Pull requests are always welcome, but may not be always merged as it has to be in align with our ideas for the ping API.
+If you want a certain feature or have an idea, you can always open a feature request
 in [Issues](https://github.com/ranimepiracy/pingapi/issues/)
-or report it on our [Discord](https://discord.gg/piracy) in `#index-wiki` to be discussed. If it is not bad, in align with
-our ideas, and we find some time, we will certainly implement your requested feature (sometime...).
+or report it on our [Discord](https://discord.gg/piracy) in `#index-wiki` to be discussed. If it is not bad, in align
+with our ideas, and we find some time, we will certainly implement your requested feature (sometime...).
 
 ## What we use
 

@@ -148,7 +148,6 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         let redis_client = redis::Client::open("redis://127.0.0.1/").unwrap();
         let cors = Cors::default()
-            .allowed_origin("http://localhost:8080")
             .allowed_origin_fn(|origin, _| {
                 let cors_regex = regex::Regex::new(&*CORS).unwrap();
                 match String::from_utf8(origin.as_bytes().to_vec()) {

@@ -1,6 +1,7 @@
 # IDE stuff
 .idea/
 .DS_STORE
+.git/
 
 # Byte-compiled / optimized / DLL files
 /target
