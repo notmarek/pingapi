@@ -35,7 +35,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 ENV INTERVAL=300
-ENV TIMEOUT=10
+ENV TIMEOUT=10000
 ENV CORS="https://piracy.moe"
 # Uncomment to enable proxy support (doesn't have to be socks5)
 # ENV SOCKS_IP="socks5://127.0.0.1"
