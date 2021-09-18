@@ -3,11 +3,11 @@ use actix_cors::Cors;
 use actix_web::{
     get, http, post,
     web::{Data, Json},
-    App, HttpResponse, HttpServer, Responder,
+    App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use log::{debug, info, trace};
 use serde::Deserialize;
-use std::env;
+use std::{env, thread, time::Duration};
 
 lazy_static::lazy_static! {
     static ref TIMEOUT: u64 = match env::var("TIMEOUT") {
@@ -35,6 +35,10 @@ lazy_static::lazy_static! {
     static ref CORS: String = env::var("CORS").unwrap_or(String::from("https://piracy.moe"));
 }
 
+lazy_static::lazy_static! {
+    static ref SECRET: String = env::var("SECRET").unwrap_or(String::from("i am not very secure ),:"));
+}
+
 #[derive(Deserialize)]
 struct Url {
     url: String,
@@ -48,6 +52,50 @@ struct Urls {
 pub const USER_AGENT: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0";
 
+async fn check_secret(req: HttpRequest) -> Option<HttpResponse> {
+    match req.headers().get("authorization") {
+        Some(header) => {
+            if header.to_str().unwrap().ne(&*SECRET) {
+                return Some(HttpResponse::Forbidden().finish());
+            }
+        }
+        _ => return Some(HttpResponse::Forbidden().finish()),
+    }
+    None
+}
+
+#[post("/add")]
+async fn add(
+    data: Json<Urls>,
+    redis_client: Data<redis::Client>,
+    req: HttpRequest,
+) -> impl Responder {
+    match check_secret(req).await {
+        Some(e) => return e,
+        _ => {}
+    }
+
+    // TODO: Logic for adding the urls
+
+    HttpResponse::Ok().finish()
+}
+
+#[post("/remove")]
+async fn remove(
+    data: Json<Urls>,
+    redis_client: Data<redis::Client>,
+    req: HttpRequest,
+) -> impl Responder {
+    match check_secret(req).await {
+        Some(e) => return e,
+        _ => {}
+    }
+
+    // TODO: Logic for adding the urls
+
+    HttpResponse::Ok().finish()
+}
+
 #[get("/health")]
 async fn health() -> impl Responder {
     HttpResponse::Ok().body("OK")
@@ -60,17 +108,30 @@ async fn index() -> impl Responder {
 
 #[post("/ping")]
 async fn ping_url(url: Json<Url>, redis_client: Data<redis::Client>) -> impl Responder {
-    return HttpResponse::Ok().json(ping::ping(&url.url, &redis_client, None, *TIMEOUT).await);
+    if let Some(data) = ping::get_status(&url.url, &redis_client).await {
+        HttpResponse::Ok().json(data)
+    } else {
+        HttpResponse::NotFound().finish()
+    }
 }
 
 #[post("/pings")]
 async fn ping_urls(urls: Json<Urls>, redis_client: Data<redis::Client>) -> impl Responder {
-    return HttpResponse::Ok().json(ping::ping_multiple(&urls.urls, &redis_client, *TIMEOUT).await);
+    HttpResponse::Ok().json(ping::get_status_multiple(&urls.urls, &redis_client).await)
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+    actix_rt::spawn(async {
+        info!("Spawning background task");
+        let redis_client = redis::Client::open("redis://127.0.0.1/").unwrap();
+        loop {
+            debug!("Running ping loop.");
+            ping::background(&redis_client, *TIMEOUT).await;
+            thread::sleep(Duration::from_secs(*INTERVAL));
+        }
+    });
     info!("Starting webservice");
     HttpServer::new(|| {
         let redis_client = redis::Client::open("redis://127.0.0.1/").unwrap();
@@ -95,6 +156,8 @@ async fn main() -> std::io::Result<()> {
             .service(ping_url)
             .service(ping_urls)
             .service(index)
+            .service(add)
+            .service(remove)
             .app_data(Data::new(redis_client))
     })
     .bind("127.0.0.1:8080")?

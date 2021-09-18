@@ -135,6 +135,23 @@ pub async fn ping_multiple(
     websites
 }
 
+pub async fn get_status(url: &str, redis_client: &redis::Client) -> Option<Website> {
+    if let Ok(last_status) = get_last_status(url, redis_client).await {
+        return Some(last_status);
+    }
+    None
+}
+
+pub async fn get_status_multiple(urls: &[String], redis_client: &redis::Client) -> Vec<Website> {
+    let mut websites: Vec<Website> = vec![];
+    for url in urls {
+        if let Some(website) = get_status(url, redis_client).await {
+            websites.push(website)
+        }
+    }
+    websites
+}
+
 pub async fn ping(
     url: &str,
     redis_client: &redis::Client,
@@ -181,6 +198,16 @@ pub async fn ping(
     w.status = status;
     update_status(w.clone(), redis_client).await;
     w
+}
+
+pub async fn background(redis_client: &redis::Client, timeout: u64) {
+    let mut con = get_redis_connection(redis_client).await;
+    let urls = con
+        .smembers::<&str, Vec<String>>("urls")
+        .await
+        .expect("Failed to retrieve urls from redis urls list");
+    ping_multiple(&urls, redis_client, timeout).await;
+    ()
 }
 
 async fn flaresolverr_ping(url: &str, client: reqwest::Client, timeout: u64) -> Status {

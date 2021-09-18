@@ -1088,6 +1088,7 @@ name = "pingapi"
 version = "0.2.0"
 dependencies = [
  "actix-cors",
+ "actix-rt",
  "actix-web",
  "env_logger",
  "futures",
