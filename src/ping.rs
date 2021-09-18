@@ -56,7 +56,7 @@ pub struct Website {
 
 const REAL_CF_DOWN: &[u16] = &[500, 502, 504, 520, 521, 522, 523, 524, 525, 526, 527]; // also 530 but that also includes ip bans and all other 1xxx errors
 
-async fn get_redis_connection(client: &redis::Client) -> redis::aio::Connection {
+pub async fn get_redis_connection(client: &redis::Client) -> redis::aio::Connection {
     client.get_async_connection().await.unwrap()
 }
 

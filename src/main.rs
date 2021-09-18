@@ -5,7 +5,9 @@ use actix_web::{
     web::{Data, Json},
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
-use log::{debug, info, trace};
+use log::{debug, info};
+use ping::get_redis_connection;
+use redis::AsyncCommands;
 use serde::Deserialize;
 use std::{env, thread, time::Duration};
 
@@ -75,7 +77,12 @@ async fn add(
         _ => {}
     }
 
-    // TODO: Logic for adding the urls
+    let mut con = get_redis_connection(&redis_client).await;
+    for url in data.0.urls {
+        con.sadd::<&str, &String, bool>("urls", &url)
+            .await
+            .expect("Failed to add url to redis urls list");
+    }
 
     HttpResponse::Ok().finish()
 }
@@ -91,7 +98,12 @@ async fn remove(
         _ => {}
     }
 
-    // TODO: Logic for adding the urls
+    let mut con = get_redis_connection(&redis_client).await;
+    for url in data.0.urls {
+        con.srem::<&str, &String, bool>("urls", &url)
+            .await
+            .expect("Failed to add url to redis urls list");
+    }
 
     HttpResponse::Ok().finish()
 }
