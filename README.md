@@ -97,7 +97,7 @@ Ping API supports the following HTTP requests:
     }
     ```
 
-***Note:** When you request a URL for the first time, the initial POST will take a little longer (up to 2 x `TIMEOUT`).*
+***Note:** When you request a URL for the first time, the initial response may 404.*
 
 ## Updating container image
 
