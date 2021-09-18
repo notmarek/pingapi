@@ -42,10 +42,11 @@ ENV CORS="https://piracy.moe"
 # ENV SOCKS_USER="USER"
 # ENV SOCKS_PASS="SECRET"
 ENV FLARESOLVERR="FLARE_URL"
+ENV SECRET="im vewy secwet"
 
 
-EXPOSE 5000
-HEALTHCHECK CMD curl --fail http://localhost:5000/health || exit 1
+EXPOSE 8080
+HEALTHCHECK CMD curl --fail http://localhost:8080/health || exit 1
 
 LABEL org.opencontainers.image.vendor="/r/animepiracy" \
       org.opencontainers.image.url="https://ping.piracy.moe" \
